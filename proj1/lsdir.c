@@ -96,9 +96,7 @@ void read_directory(int pipe_fd, const char* dir_path) {
 				}
 
 				if((pid = fork()) == -1) {
-					//in case of error
-					perror(strerror(errno));
-					perror("Error creating a child.\n");
+					printf("Error creating a child. (%s)\n", strerror(errno));
 				}	else if (pid >  0) {
 					//father
 					close(fd[1]); //close the sender
