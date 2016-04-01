@@ -41,13 +41,15 @@ int comp_func(const void* file1, const void* file2){
 	if((pid = fork()) < 0)
 		write(STDOUT_FILENO,"comp_func: fork() failed\n",sizeof("comp_func: fork() failed\n"));
 
-	if(pid == 0){
+	if(pid == 0){ //in child process
 		execlp("diff", file1_complete_path, file2_complete_path);
 	}
 
 	else{
-//TODO
+		int status;
+		waitpid(pid,&status,WNOHANG);
 	}
+
 
 	//compare the file modes
 	if(file1_info.st_mode != file2_info.st_mode)
