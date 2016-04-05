@@ -1,3 +1,5 @@
+#include"lsdir.h"
+
 #include<dirent.h>
 #include<sys/wait.h>
 #include<errno.h>
@@ -9,11 +11,6 @@
 #include<unistd.h>
 #include<stdio.h>
 #include<string.h>
-
-typedef struct {
-	char* name;
-	char* path;
-} file_path; 
 
 void print_file(const char* path, int output) {
 	struct stat file_info;
@@ -110,7 +107,7 @@ void read_directory(int file, const char* dir_path) {
 	}
 }
 
-int main(int argc, char* argv[]){
+void list_dir(const char* dir_path){
 	char* filepath = "./files.txt";
 	int file = open(filepath, O_WRONLY | O_APPEND | O_CREAT, S_IRWXG | S_IRWXU | S_IROTH);
 	int pid;
@@ -128,9 +125,9 @@ int main(int argc, char* argv[]){
 		perror("Error creating main fork.\n");
 	} else if (pid > 0) {
 		//father
-		int no_files = 0;
-		int files_size = 10;
-		file_path (*files) = (file_path*) malloc(files_size*sizeof(file_path));
+//		int no_files = 0;
+//		int files_size = 10;
+//		file_path (*files) = (file_path*) malloc(files_size*sizeof(file_path));
 
 		//do the sorting and whatever.
 		if(waitpid(pid, NULL, 0) < 0) {
@@ -140,7 +137,6 @@ int main(int argc, char* argv[]){
 		//read from files.txt		
 	} else {
 		//son
-		read_directory(file, argv[1]);
+		read_directory(file, dir_path); 
 	}
-	return 0;
 }
