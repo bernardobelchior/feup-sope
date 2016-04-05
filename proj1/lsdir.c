@@ -72,7 +72,7 @@ void print_directory(const char* name, int output) {
 
 }
 
-void read_directory(int pipe_fd, const char* dir_path) {
+void read_directory(int file, const char* dir_path) {
 	DIR* directory;
 	struct dirent* child;		
 
@@ -89,40 +89,22 @@ void read_directory(int pipe_fd, const char* dir_path) {
 		if(strcmp(child->d_name, ".") && strcmp(child->d_name, "..")) {
 			if(is_dir == 1) {
 				//fork
-				int pid, fd[2];
-		
-				if(pipe(fd) < 0) {
-					perror("Error creating pipe.\n");
-				}
-
+				int pid; 
+	
 				if((pid = fork()) == -1) {
 					printf("Error creating a child. (%s)\n", strerror(errno));
-				}	else if (pid >  0) {
-					//father
-					close(fd[1]); //close the sender
-					if((waitpid(pid, NULL, 0)) < 0) {
-						perror("waitpid error.\n");
-					}
-					char temp[200]; //dynamic allocate memory afterwards
-					//read path
-					read(fd[0], temp, 200);
-					write(pipe_fd, temp, 200);
-					//read name
-					read(fd[0], temp, 200);
-					write(pipe_fd, temp, 200);
-				} else {
+				}	else if (pid ==  0) {
 					//son
-					char terminator[] = "/\0";
-					strcat(path, terminator);
-					close(fd[0]); //close the receiver
-					read_directory(fd[1], path);	
+					strcat(path, "/");
+					printf("Reading %s\n", path);
+					read_directory(file, path);	
 					exit(0);
 				}
 			} else if(is_dir == 0) {
-				//send to father.
-//				write(STDOUT_FILENO, dir_path, strlen(dir_path) + 1);
-				write(STDOUT_FILENO, child->d_name, strlen(child->d_name) + 1);
-				write(STDOUT_FILENO, "\n", 1);
+				//write to file
+				char file_line[255];
+				sprintf(file_line, "%s %s\n", dir_path, child->d_name);
+				write(file, file_line, strlen(file_line));
 			}
 		}
 	}
@@ -130,9 +112,8 @@ void read_directory(int pipe_fd, const char* dir_path) {
 
 int main(int argc, char* argv[]){
 	char* filepath = "./files.txt";
-	int file = open(filepath, O_WRONLY | O_TRUNC | O_CREAT);
+	int file = open(filepath, O_WRONLY | O_APPEND | O_CREAT, S_IRWXG | S_IRWXU | S_IROTH);
 	int pid;
-	int fd[2];
 
 	if(file == -1) {
 		perror(strerror(errno));
@@ -140,14 +121,8 @@ int main(int argc, char* argv[]){
 		file = STDOUT_FILENO;
 	}
 
-	char *header = "Serial number | File size | Modification Date | File name\n";
-	write(file, header, strlen(header));
-
-	if(pipe(fd) < 0) {
-		perror("Error creating main pipe.\n");
-		exit(1);
-	}
-
+//	char *header = "Serial number | File size | Modification Date | File name\n";
+//	write(file, header, strlen(header));
 
 	if((pid = fork()) < 0) {
 		perror("Error creating main fork.\n");
@@ -158,21 +133,14 @@ int main(int argc, char* argv[]){
 		file_path (*files) = (file_path*) malloc(files_size*sizeof(file_path));
 
 		//do the sorting and whatever.
-		close(fd[1]);			
 		if(waitpid(pid, NULL, 0) < 0) {
 			perror("Error waiting for main child.\n");
 		}
 
-		//read from the queue
-		char temp[200];
-		read(fd[0], &temp, 199);
-		temp[199] = '\0';
-		printf("%s", temp);		
-
+		//read from files.txt		
 	} else {
 		//son
-		close(fd[0]);
-		read_directory(fd[1], argv[1]);
+		read_directory(file, argv[1]);
 	}
 	return 0;
 }
