@@ -9,6 +9,19 @@
 #include<stdlib.h>
 #include<unistd.h>
 
+
+int same_files(file_path* file1, file_path* file2) {
+	//TODO check permissions and content	
+}
+
+void check_duplicate_files(const char* filepath, file_path* files, int files_size) {
+	int i;	
+	for(i = 0; i < files_size; i++) {
+		//TODO do the actual check
+	}
+
+}
+
 void print_file(const char* path, int output) {
 	struct stat file_info;
 	if(stat(path, &file_info) == 1) {
@@ -72,20 +85,22 @@ int main(int argc, char* argv[]) {
 		exit(1);
 	}
 
-
 	const char* filepath = "./files.txt";
 	list_dir(filepath, argv[1]);
 	int files_size = 0;
+	//Not working properly with big files
    file_path (*files) =	read_from_file(filepath, &files_size);
 
-	printf("The array has size of %u.\n", files_size);
+/*	printf("The array has size of %u.\n", files_size);
 
 	int i;
 	for(i = 0; i < files_size; i++) {
 		printf("%s %s\n", files[i].path, files[i].name);
-	}
+	}*/
 
-
+	//qsort(files, files_size, sizeof(file_path), comp_func);
+	
+	check_duplicate_files(filepath, files, files_size);
 
 	return 0;
 }
