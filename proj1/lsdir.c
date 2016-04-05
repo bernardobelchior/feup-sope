@@ -29,6 +29,7 @@ void read_directory(int file, const char* dir_path) {
 
 	if((directory = opendir(dir_path)) == NULL) {
 		fprintf(stderr, "The directory %s could not be opened.\n", dir_path);
+		exit(3);
 	}
 
 	while((child = readdir(directory)) != NULL) {
@@ -61,8 +62,11 @@ void read_directory(int file, const char* dir_path) {
 	}
 }
 
-void list_dir(const char* dir_path){
-	char* filepath = "./files.txt";
+void list_dir(const char* filepath, const char* dir_path){
+	if(dir_path[strlen(dir_path) -1] != '/') {
+		fprintf(stderr, "The directory provided is not a valid directory.\nDid you forget the \'/'\' at the end?\n");
+		exit(2);
+	}
 
 	//Clears the file
 	open(filepath, O_TRUNC);
