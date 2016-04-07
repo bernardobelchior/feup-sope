@@ -1,5 +1,3 @@
-#include"lsdir.h"
-
 #include<dirent.h>
 #include<sys/wait.h>
 #include<errno.h>
@@ -62,10 +60,10 @@ void read_directory(int file, const char* dir_path) {
 	}
 }
 
-void list_dir(const char* filepath, const char* dir_path){
+int list_dir(const char* dir_path, const char* filepath){
 	if(dir_path[strlen(dir_path) -1] != '/') {
 		fprintf(stderr, "The directory provided is not a valid directory.\nDid you forget the \'/'\' at the end?\n");
-		exit(2);
+		return 2;
 	}
 
 	//Clears the file
@@ -80,4 +78,18 @@ void list_dir(const char* filepath, const char* dir_path){
 	}
 
 	read_directory(file, dir_path); 
+	return 0;
+}
+
+int main(int argc, char* argv[]) {
+	if(argc < 2 || argc > 3) {
+		fprintf(stderr, "Invalid number of arguments. \nProgram must be called as:\n./lsdir <directory>\nWhere <directory> is a valid directory that ends in \'/\'.\n");
+		return 1;
+	} else if (argc == 2){
+		return list_dir(argv[1], "./files.txt");
+	} else {
+		return list_dir(argv[1], argv[2]);
+	}
+
+	return 0;
 }

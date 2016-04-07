@@ -4,15 +4,12 @@ CFLAGS = -Wall
 
 TARGET = rmdup
 
-all: rmdup
+all: rmdup lsdir
 
-rmdup: bin/rmdup.o bin/lsdir.o
-	$(CC) $(CFLAGS) -o rmdup bin/rmdup.o bin/lsdir.o
+rmdup: rmdup.c 
+	$(CC) $(CFLAGS) -o rmdup rmdup.c 
 
-bin/rmdup.o: rmdup.c lsdir.c lsdir.h
-	$(CC) $(CFLAGS) -o bin/rmdup.o -c rmdup.c
+lsdir: lsdir.c
+	$(CC) $(CFLAGS) -o lsdir lsdir.c
 
-bin/lsdir.o: lsdir.c lsdir.h
-	$(CC) $(CFLAGS) -o bin/lsdir.o -c lsdir.c 
-	
 clean: $(RM) rmdup bin/*.o *~

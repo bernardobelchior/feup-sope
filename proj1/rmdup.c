@@ -1,5 +1,3 @@
-#include "lsdir.h"
-
 #include<stdio.h>
 #include<string.h>
 #include<time.h>
@@ -9,9 +7,14 @@
 #include<stdlib.h>
 #include<unistd.h>
 
+typedef struct {
+	char* path;
+	char* name;
+} file_path; 
 
 int same_files(file_path* file1, file_path* file2) {
 	//TODO check permissions and content	
+	return 0;
 }
 
 void check_duplicate_files(const char* filepath, file_path* files, int files_size) {
@@ -85,8 +88,9 @@ int main(int argc, char* argv[]) {
 		exit(1);
 	}
 
+	//FIXME: DO NOT USE FIXED PATH
 	const char* filepath = "./files.txt";
-	list_dir(filepath, argv[1]);
+	execlp("/home/Bernardo/Documentos/SOPE/proj1/lsdir", "lsdir", argv[1], filepath, NULL);
 	int files_size = 0;
 	//Not working properly with big files
    file_path (*files) =	read_from_file(filepath, &files_size);
