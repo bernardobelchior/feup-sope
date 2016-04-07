@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
 
 	//FIXME: DO NOT USE FIXED PATH
 	const char* filepath = "./files.txt";
-	execlp("/home/Bernardo/Documentos/SOPE/proj1/lsdir", "lsdir", argv[1], filepath, NULL);
+	execlp("./lsdir", "lsdir", argv[1], filepath, NULL);
 	int files_size = 0;
 	//Not working properly with big files
    file_path (*files) =	read_from_file(filepath, &files_size);
