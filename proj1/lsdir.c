@@ -26,24 +26,26 @@ void read_directory(int file, const char* dir_path) {
 		strcat(path, child->d_name);
 
 		int is_dir = is_directory(path);
-		if(strcmp(child->d_name, ".") && strcmp(child->d_name, "..")) {
-			if(is_dir == 1) {
+		if((strcmp(child->d_name, ".")!=0) && (strcmp(child->d_name, "..")!=0)) {
+			if(is_dir) {
 				//fork
 				int pid; 
 
-				if((pid = fork()) == -1) {
+				if((pid = fork()) < 0) {
 					fprintf(stderr, "Error creating a child. (%s)\n", strerror(errno));
-				}	else if (pid ==  0) {
-					//son
+				}	else if (pid ==  0) { //son
 					strcat(path, "/");
 					read_directory(file, path);	
 					exit(0);
 				}
-			} else if(is_dir == 0) {
-				//write to file
-				char file_line[255];
-				sprintf(file_line, "%s %s\n", dir_path, child->d_name);
-				write(file, file_line, strlen(file_line));
+
+			} else{ //father
+				if(is_dir == 0) {
+					//write to file
+					char file_line[255];
+					sprintf(file_line, "%s%s\n", dir_path, child->d_name);
+					write(file, file_line, strlen(file_line));
+				}
 			}
 		}
 	}
