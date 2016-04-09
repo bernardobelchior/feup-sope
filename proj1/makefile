@@ -4,6 +4,8 @@ CFLAGS = -Wall
 
 TARGET = rmdup
 
+DEPS = rmdup.h lsdir.h
+
 all: rmdup lsdir
 
 rmdup: rmdup.c 

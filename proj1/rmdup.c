@@ -1,17 +1,5 @@
-#include<stdio.h>
-#include<sys/wait.h>
-#include<string.h>
-#include<time.h>
-#include<sys/stat.h>
-#include<fcntl.h>
-#include<errno.h>
-#include<stdlib.h>
-#include<unistd.h>
+#include "rmdup.h"
 
-typedef struct {
-	char* path;
-	char* name;
-} file_path; 
 
 int same_files(file_path* file1, file_path* file2) {
 	//TODO check permissions and content	

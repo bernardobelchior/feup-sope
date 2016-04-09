@@ -1,15 +1,4 @@
-#include<dirent.h>
-#include<sys/wait.h>
-#include<errno.h>
-#include<sys/types.h>
-#include<fcntl.h>
-#include<stdlib.h>
-#include<time.h>
-#include<sys/stat.h>
-#include<unistd.h>
-#include<stdio.h>
-#include<string.h>
-
+#include "lsdir.h"
 
 int is_directory(const char* full_path) {
 	struct stat file_info;
