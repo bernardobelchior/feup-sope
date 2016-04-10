@@ -37,4 +37,4 @@ void print_file(const char* path, int output);
 /**
  *  \brief reads a file and returns a pointer to a file_path struct that represents it
  */
-file_path* *read_from_file(const char* filepath, int* size); 
+file_path* read_from_file(const char* filepath, int* size); 

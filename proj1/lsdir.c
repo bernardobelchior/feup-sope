@@ -19,15 +19,15 @@ void read_directory(int file, const char* dir_path) {
 		exit(3);
 	}
 
-	while((child = readdir(directory)) != NULL) {
+	while((child = readdir(directory)) != NULL) { 												//for every child in a directory
 		int path_size = strlen(dir_path)+strlen(child->d_name)+2; 
-		char path[path_size];
+		char path[path_size]; 																			//creates a string with the child path
 		strcpy(path, dir_path);
 		strcat(path, child->d_name);
 
-		int is_dir = is_directory(path);
-		if((strcmp(child->d_name, ".")!=0) && (strcmp(child->d_name, "..")!=0)) {
-			if(is_dir) {
+		int is_dir = is_directory(path); 															//checks if the child is a dir
+		if((strcmp(child->d_name, ".")!=0) && (strcmp(child->d_name, "..")!=0)) { 		//excludes the current and father dirs, to avoid endless cycles
+			if(is_dir) { 									
 				//fork
 				int pid= fork();
 
@@ -37,7 +37,7 @@ void read_directory(int file, const char* dir_path) {
 				
 				else if (pid ==  0) { //son
 					strcat(path, "/");
-					read_directory(file, path);	
+					read_directory(file, path);
 					exit(0);
 				}
 
@@ -54,9 +54,8 @@ void read_directory(int file, const char* dir_path) {
 		  
 			else{ //not a directory
 					char file_line[255];
-					sprintf(file_line, "%s%s\n", dir_path, child->d_name);
+					sprintf(file_line, "%s %s\n", dir_path, child->d_name);  //FIXME try to find a way to do this without the space
 					write(file, file_line, strlen(file_line));
-			//FIXME segfaults	
 			}
 		}
 	}

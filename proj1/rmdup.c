@@ -34,19 +34,21 @@ void print_file(const char* path, int output) {
 	write(output, " | ", strlen(" | "));
 }
 
-file_path* *read_from_file(const char* filepath, int* size) {
+file_path* read_from_file(const char* filepath, int* size) {
+
 	int cur_size = 20;
-	file_path* (*files) = (file_path**) malloc(cur_size*sizeof(file_path*));
+	file_path* files = (file_path*) malloc(0);
 
 	struct stat file_info;
+
 	if(stat(filepath, &file_info) == -1) {
 		fprintf(stderr, "The file could not be open. Exiting... (%s)\n", strerror(errno));
-		exit(0);
+		exit(2);
 	}
 
 	FILE* file = fopen(filepath, "r");
 
-	int i = -1;
+	/*int i = -1;
 	do {
 		i++;
 		if(i == cur_size -1) {
@@ -56,12 +58,29 @@ file_path* *read_from_file(const char* filepath, int* size) {
 		files[i] = (file_path*) malloc(sizeof(file_path));	
 		files[i]->path = (char*) malloc(200*sizeof(char));
 		files[i]->name = (char*) malloc(50*sizeof(char));				
-	} while(fscanf(file, "%s %s\n", files[i]->path, files[i]->name) != EOF);
+	} while(fscanf(file, "%s %s\n", files[i]->path, files[i]->name) != EOF);*/
 
-	if(feof(file))
-		printf("Acabou o ficheiro! Li %i cenas.\n", i);
+	char path_buffer[200], name_buffer[100];
+	int i = 0;
 
-	files = (file_path**) realloc(files, i*sizeof(file_path*));
+	printf("Mequie bro!\n");
+	
+	while( fscanf(file, "%s %s",path_buffer, name_buffer) != EOF){
+		
+		printf("%d\n", i);
+		files = realloc(files, (i+1) * sizeof(file_path));
+		files[i].name = (char *)malloc(50*sizeof(char));
+		files[i].path = (char *)malloc(200*sizeof(char));
+		
+		printf("%s%s\n",path_buffer,name_buffer);
+		strcpy(files[i].name,name_buffer);
+		strcpy(files[i].path,path_buffer);
+		i++;
+
+	}
+
+	printf("Acabou o ficheiro! Li %i cenas.\n", i);
+
 	*size = i;
 
 	return files;
@@ -75,21 +94,28 @@ int main(int argc, char* argv[]) {
 
 	const char* filepath = "./files.txt";
 
-	int pid;
-	if((pid = fork()) == 0) {
+	int pid = fork();
+	if(pid < 0){
+		fprintf(stderr,"main: fork() failed!\n");
+	}
+
+	if(pid == 0) { //child
 		execlp("./lsdir", "lsdir", argv[1], filepath, NULL);
-	} else {
+		exit(0);
+	} 
+	
+	else {  //father
 		waitpid(pid, NULL, 0);
 	}
 
 	int files_size = 0;
 	//Not working properly with big files
-   file_path* (*files) =	read_from_file(filepath, &files_size);
+   file_path* files =	read_from_file(filepath, &files_size);
 	printf("The array has size of %u.\n", files_size);
 
 	//qsort(files, files_size, sizeof(file_path), comp_func);
 	
-	check_duplicate_files(filepath, files, files_size);
+	//check_duplicate_files(filepath, files, files_size);
 
 	return 0;
 }
