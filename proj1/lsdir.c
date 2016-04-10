@@ -29,23 +29,34 @@ void read_directory(int file, const char* dir_path) {
 		if((strcmp(child->d_name, ".")!=0) && (strcmp(child->d_name, "..")!=0)) {
 			if(is_dir) {
 				//fork
-				int pid; 
+				int pid= fork();
 
-				if((pid = fork()) < 0) {
+				if(pid < 0) {
 					fprintf(stderr, "Error creating a child. (%s)\n", strerror(errno));
-				}	else if (pid ==  0) { //son
+				}	
+				
+				else if (pid ==  0) { //son
 					strcat(path, "/");
 					read_directory(file, path);	
 					exit(0);
 				}
 
-			} else{ //father
-				if(is_dir == 0) {
-					//write to file
+				else{ //father
+					
+					waitpid(pid,NULL,0);
 					char file_line[255];
 					sprintf(file_line, "%s%s\n", dir_path, child->d_name);
 					write(file, file_line, strlen(file_line));
+
+
 				}
+			}
+		  
+			else{ //not a directory
+					char file_line[255];
+					sprintf(file_line, "%s%s\n", dir_path, child->d_name);
+					write(file, file_line, strlen(file_line));
+			//FIXME segfaults	
 			}
 		}
 	}
