@@ -1,5 +1,24 @@
 #include "rmdup.h"
 
+int comp_func(const void* file1, const void* file2){
+
+	//check case
+	
+	char name1[50],name2[50];
+	strcpy(name1, ((file_path*) file1)->name);
+	strcpy(name2, ((file_path*) file2)->name);
+
+	if(name1[0] > 'A' && name1[0] < 'Z')
+		name1[0] += 20;
+	
+	if(name2[0] > 'A' && name2[0] < 'Z')
+		name2[0] += 20;
+
+	//printf("%s\n\n",name1);
+	
+	int ret = strcmp(name1,name2);
+	return ret;
+}
 
 int same_files(file_path* file1, file_path* file2) {
 	//TODO check permissions and content	
@@ -67,19 +86,18 @@ file_path* read_from_file(const char* filepath, int* size) {
 	
 	while( fscanf(file, "%s %s",path_buffer, name_buffer) != EOF){
 		
-		printf("%d\n", i);
+		//printf("%d\n", i);
 		files = realloc(files, (i+1) * sizeof(file_path));
 		files[i].name = (char *)malloc(50*sizeof(char));
 		files[i].path = (char *)malloc(200*sizeof(char));
 		
-		printf("%s%s\n",path_buffer,name_buffer);
 		strcpy(files[i].name,name_buffer);
 		strcpy(files[i].path,path_buffer);
 		i++;
 
 	}
 
-	printf("Acabou o ficheiro! Li %i cenas.\n", i);
+	//printf("Acabou o ficheiro! Li %i cenas.\n", i);
 
 	*size = i;
 
@@ -104,7 +122,7 @@ int main(int argc, char* argv[]) {
 		exit(0);
 	} 
 	
-	else {  //father
+	else {  //father waits for lsdir to finish
 		waitpid(pid, NULL, 0);
 	}
 
@@ -113,7 +131,11 @@ int main(int argc, char* argv[]) {
    file_path* files =	read_from_file(filepath, &files_size);
 	printf("The array has size of %u.\n", files_size);
 
-	//qsort(files, files_size, sizeof(file_path), comp_func);
+	qsort(files, files_size, sizeof(file_path), comp_func);
+
+	int i = 0;
+	for(i = 0; i < files_size; i++)
+		printf("%s%s\n",files[i].path, files[i].name);
 	
 	//check_duplicate_files(filepath, files, files_size);
 
