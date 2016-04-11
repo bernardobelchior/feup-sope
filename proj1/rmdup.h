@@ -17,7 +17,7 @@ typedef struct {
 /**
  * \brief function that checks if two given files are the same
  *
- * two files are the same when they have the same name, same size, same content and same permissions
+ * two regular files are the same when they have the same name, same size, same content and same permissions
  * @ret 0 if the files are the not the same
  * @ret 1 if the files are the same
  */

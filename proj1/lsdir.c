@@ -10,7 +10,7 @@ int is_directory(const char* full_path) {
 	return S_ISDIR(file_info.st_mode);
 }
 
-void read_directory(int file, const char* dir_path) {
+void read_directory(int file, const char* dir_path) { //TODO exclude directory from file (ex: "~/Downloads/" should not be entered in the file, but any file inside it should be
 	DIR* directory;
 	struct dirent* child;		
 
