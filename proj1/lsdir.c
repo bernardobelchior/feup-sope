@@ -42,11 +42,7 @@ void read_directory(int file, const char* dir_path) { //TODO exclude directory f
 				}
 
 				else{ //father
-					
 					waitpid(pid,NULL,0);
-					char file_line[255];
-					sprintf(file_line, "%s %s\n", dir_path, child->d_name);//FIXME try to find a way to do this without the space
-					write(file, file_line, strlen(file_line));
 				}
 			}
 		  
