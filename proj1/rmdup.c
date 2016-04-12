@@ -2,7 +2,7 @@
 
 int comp_func(const void* file1, const void* file2){
 
-	//check case
+	//checking case
 	
 	char name1[50],name2[50];
 	strcpy(name1, ((file_path*) file1)->name);
@@ -14,8 +14,6 @@ int comp_func(const void* file1, const void* file2){
 	if(name2[0] > 'A' && name2[0] < 'Z')
 		name2[0] += 20;
 
-	//printf("%s\n\n",name1);
-	
 	int ret = strcmp(name1,name2);
 	return ret;
 }
@@ -69,11 +67,8 @@ file_path* read_from_file(const char* filepath, int* size) {
 	char path_buffer[200], name_buffer[100];
 	int i = 0;
 
-	printf("Mequie bro!\n");
-	
 	while( fscanf(file, "%s %s",path_buffer, name_buffer) != EOF){
 		
-		//printf("%d\n", i);
 		files = realloc(files, (i+1) * sizeof(file_path));
 		files[i].name = (char *)malloc(50*sizeof(char));
 		files[i].path = (char *)malloc(200*sizeof(char));
@@ -84,27 +79,28 @@ file_path* read_from_file(const char* filepath, int* size) {
 
 	}
 
-	//printf("Acabou o ficheiro! Li %i cenas.\n", i);
-
 	*size = i;
 
 	return files;
 }
 
 int main(int argc, char* argv[]) {
+
 	if(argc != 2) {
 		fprintf(stderr, "Invalid number of arguments. \nProgram must be called as:\n./rmdup <directory>\nWhere <directory> is a valid directory that ends in \'/\'.\n");
 		return 1;
 	}
 
 	const char* filepath = "./files.txt";
-
 	int pid = fork();
-	if(pid < 0){
+	int files_size = 0;
+	int i = 0;
+
+	if(pid < 0){ //error
 		fprintf(stderr,"main: fork() failed!\n");
 	}
 
-	if(pid == 0) { //child
+	if(pid == 0) { //child uses lsdir to list all the files in the directory and in its subdirectories and stores the list in a text file
 		execlp("./lsdir", "lsdir", argv[1], filepath, NULL);
 		exit(0);
 	} 
@@ -112,19 +108,15 @@ int main(int argc, char* argv[]) {
 	else {  //father waits for lsdir to finish
 		waitpid(pid, NULL, 0);
 	}
-
-	int files_size = 0;
-	//Not working properly with big files
-   file_path* files =	read_from_file(filepath, &files_size);
-	printf("The array has size of %u.\n", files_size);
-
+	
+	file_path* files =	read_from_file(filepath, &files_size);
 	qsort(files, files_size, sizeof(file_path), comp_func);
 
-	int i = 0;
+	//FIXME for debug purposes, delete when done
 	for(i = 0; i < files_size; i++)
 		printf("%s%s\n",files[i].path, files[i].name);
 	
-	//check_duplicate_files(filepath, files, files_size);
+	//check_duplicate_files(filepath, files, files_size); TODO
 
 	return 0;
 }
