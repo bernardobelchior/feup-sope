@@ -55,7 +55,6 @@ void print_file(const char* path, int output) {
 
 file_path* read_from_file(const char* filepath, int* size) {
 
-	int cur_size = 20;
 	file_path* files = (file_path*) malloc(0);
 
 	struct stat file_info;
@@ -66,18 +65,6 @@ file_path* read_from_file(const char* filepath, int* size) {
 	}
 
 	FILE* file = fopen(filepath, "r");
-
-	/*int i = -1;
-	do {
-		i++;
-		if(i == cur_size -1) {
-			cur_size += 20;
-			files = (file_path**) realloc(files, cur_size*sizeof(file_path*));
-		}
-		files[i] = (file_path*) malloc(sizeof(file_path));	
-		files[i]->path = (char*) malloc(200*sizeof(char));
-		files[i]->name = (char*) malloc(50*sizeof(char));				
-	} while(fscanf(file, "%s %s\n", files[i]->path, files[i]->name) != EOF);*/
 
 	char path_buffer[200], name_buffer[100];
 	int i = 0;
