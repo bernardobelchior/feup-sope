@@ -1,3 +1,6 @@
+#ifndef RMDUP_H
+#define RMDUP_H
+
 #include<stdio.h>
 #include<sys/wait.h>
 #include<string.h>
@@ -46,3 +49,6 @@ file_path* read_from_file(const char* filepath, int* size);
  * @ret 1 if file1 > file2, 0 if equal, -1 if lower
  * */
 int comp_func(const void* file1, const void*  file2);
+
+
+#endif

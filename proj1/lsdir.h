@@ -1,3 +1,6 @@
+#ifndef LSDIR_H
+#define LSDIR_H
+
 #include<dirent.h>
 #include<sys/wait.h>
 #include<errno.h>
@@ -25,3 +28,5 @@ void read_directory(int file, const char* dir_path);
  * FIXME is this really needed??
  */
 int list_dir(const char* dir_path, const char* filepath);
+
+#endif
