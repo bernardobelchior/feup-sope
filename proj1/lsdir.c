@@ -5,11 +5,20 @@ int is_directory(const char* full_path) {
 	if(stat(full_path, &file_info) == -1) {
 		perror(strerror(errno));
 		perror("Error getting data about directory.");
-		return -1;
+		return 0;
 	}
 	return S_ISDIR(file_info.st_mode);
 }
 
+int is_regular_file(const char* full_path){
+	struct stat file_info;
+	if(stat(full_path, &file_info) == -1){
+		perror(strerror(errno));
+		perror("Error getting data about directory.");
+		return 0;
+	}
+	return S_ISREG(file_info.st_mode);
+}
 void read_directory(int file, const char* dir_path) {
 	DIR* directory;
 	struct dirent* child;		
@@ -27,7 +36,7 @@ void read_directory(int file, const char* dir_path) {
 
 		int is_dir = is_directory(path); 															//checks if the child is a dir
 		if((strcmp(child->d_name, ".")!=0) && (strcmp(child->d_name, "..")!=0)) { 		//excludes the current and father dirs, to avoid endless cycles
-			if(is_dir) { 									
+			if(is_dir != 0) { 									
 				//fork
 				int pid= fork();
 
@@ -47,9 +56,12 @@ void read_directory(int file, const char* dir_path) {
 			}
 		  
 			else{ //not a directory
-					char file_line[255];
-					sprintf(file_line, "%s %s\n", dir_path, child->d_name);  //FIXME try to find a way to do this without the space
-					write(file, file_line, strlen(file_line));
+					int is_reg = is_regular_file(path);
+					if(is_reg != 0){
+						char file_line[255];
+						sprintf(file_line, "%s %s\n", dir_path, child->d_name);  //FIXME try to find a way to do this without the space
+						write(file, file_line, strlen(file_line));
+					}
 			}
 		}
 	}
