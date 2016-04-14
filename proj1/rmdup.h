@@ -12,10 +12,23 @@
 #include<unistd.h>
 
 
+/**
+ * struct used to store the file path for a file
+ */
 typedef struct {
 	char* path;
 	char* name;
 } file_path; 
+
+/**
+ * struct used to store duplicate files
+ * fp is the file path for the file
+ * num_dups is the number of duplicates this file has (used to iterate the array)
+ */
+typedef struct{
+	file_path* fp;
+	int num_dups;
+}dup_file;
 
 /**
  * \brief function that checks if two given files are the same
@@ -24,13 +37,16 @@ typedef struct {
  * @ret 0 if the files are the not the same
  * @ret 1 if the files are the same
  */
-int same_files(file_path* file1, file_path* file2); 
+int same_files(const file_path file1,const file_path file2); 
 
 /**
  * \brief checks for duplicates in an array of pointers to files
  *
+ * @ret array of arrays of file_paths storing all the instances of equal files found
+ * 
+ * the bidimensional arrays will be sorted by oldest modification so that the first element of an array (v[i][0]) will be the oldest
  */
-void check_duplicate_files(const char* filepath, file_path* *files, int files_size); 
+dup_file **check_duplicate_files(const char* filepath, file_path* *files, int files_size, *int n_dupicates); 
 
 
 /**

@@ -19,6 +19,13 @@
 int is_directory(const char* full_path); 
 
 /**
+ * \brief checks if a file given by a certain filepath is a regular file
+ *
+ * @ret non zero if the file is regular
+ */
+int is_regular_file(const char* full_path);
+
+/**
  * \brief recursively reads a directory and its children and writes their info to a file
  */ 
 void read_directory(int file, const char* dir_path);
