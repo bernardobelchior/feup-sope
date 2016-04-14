@@ -1,7 +1,7 @@
 #include "rmdup.h"
 
 int comp_func(const void* file1, const void* file2){
-	
+
 	struct stat file_info1, file_info2;
 
 	char path1[255], path2[255];
@@ -41,9 +41,12 @@ int comp_func(const void* file1, const void* file2){
 
 int same_files(const file_path file1,const file_path file2) {
 	//TODO check permissions and content	
-	
+
 	struct stat file_info1, file_info2;
 	char path1[255],path2[255];
+
+	if(strcmp(file1.name,file2.name) != 0)
+		return 0;
 
 	strcpy(path1,file1.path);
 	strcat(path1,file1.name);
@@ -61,10 +64,36 @@ int same_files(const file_path file1,const file_path file2) {
 		return -1;
 	}
 
-	//
+	//checking permissions
+	if(file_info1.st_mode != file_info2.st_mode)
+		return 0;
+
+	//checking content
+	pid_t pid;
+
+	pid = fork();
+
+	if(pid < 0){
+		fprintf(stderr, "rmdup:same_files:fork() error\n");
+		return -1;
+	}	
+
+	else if(pid == 0){ //child
+		if(execlp("diff","diff",path1,path2,NULL) == -1){
+			fprintf(stderr,"rmdup:same_files:execlp failed\n");
+			return -1;
+		}
+	}
+
+	else { //father
+		int status;
+		waitpid(pid,&status,0);
+		if(status != 0) //files are equal, diff returned 0
+			return 0;
+	}
 
 
-	return 0;
+	return 1;
 }
 
 dup_file** check_duplicate_files(const char* filepath, file_path *files, int files_size, int *n_duplicates) {
@@ -85,9 +114,10 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 
 
 		for(j = 0; j < *n_duplicates; j++){ //check if a file is already in the duplicates array
-			if (same_files(files[i], *duplicates[j][0].fp))
+			if (same_files(files[i], *duplicates[j][0].fp)){
 				skip = 1;
-			break;
+				break;
+			}
 		}
 
 		if(skip)
@@ -95,41 +125,46 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 
 
 		for(j=i+1;j < files_size; j++){
+			
 			if(same_files(files[i], files[j])){
-				printf("butarde\n"); //FIXME remove
-			if(new_dup){ 			//first duplicate of a file
-				curr_size = 2;
-				(*n_duplicates)++; //increments the size of the duplicates array
-				duplicates = realloc(duplicates, *n_duplicates * sizeof(dup_file *));
-				new_dup = 0; //resets boolean
-				duplicates[i] = (dup_file *)malloc(curr_size * sizeof(dup_file));
+				printf("butarde - i = %d\n%s\n",i,files[j].name); //FIXME remove
 
-				duplicates[i][0].fp = &files[i];
-				duplicates[i][0].num_dups = 1;
+				if(new_dup){ 			//first duplicate of a file
+					curr_size = 2;
+					(*n_duplicates)++; //increments the size of the duplicates array
+					printf("%d\n\n",*n_duplicates);
+					duplicates = realloc(duplicates, *n_duplicates * sizeof(dup_file *));
+					
+					new_dup = 0; //resets boolean
 
-				duplicates[i][1].fp = &files[j];
-				duplicates[i][1].num_dups = 1;
-			}
+					duplicates[i] = (dup_file *)malloc(curr_size * sizeof(dup_file));
 
-			else{ 
-				curr_size ++;
-				duplicates[i] = realloc(duplicates[i],curr_size * sizeof(dup_file *));
-				duplicates[i][curr_size - 1].fp = &files[j];
-				duplicates[i][curr_size - 1].num_dups = duplicates[i][0].num_dups;
+					duplicates[i][0].fp = &files[i];
+					duplicates[i][0].num_dups = 2;
 
-				int k = 0;
-				for(k = 0; k < curr_size; k++){ 	//increments the duplicate count on every duplicate file
-					duplicates[i][k].num_dups++;
+					duplicates[i][1].fp = &files[j];
+					duplicates[i][1].num_dups = 2;
+				}
+
+				else{ 
+					curr_size ++;
+					duplicates[i] = realloc(duplicates[i],curr_size * sizeof(dup_file *));
+					duplicates[i][curr_size - 1].fp = &files[j];
+					duplicates[i][curr_size - 1].num_dups = duplicates[i][0].num_dups;
+
+					int k = 0;
+					for(k = 0; k < curr_size; k++){ 	//increments the duplicate count on every duplicate file
+						duplicates[i][k].num_dups++;
+					}
 				}
 			}
 		}
-		}
 	}
-	
+
 	//TODO remove -- for debug purposes only
 	for(i = 0; i < *n_duplicates; i++){
-		for(j = 0; j<duplicates[i][0].num_dups; j++){
-			printf("%s%s = ", duplicates[i][j].fp->path, duplicates[i][j].fp->name);
+		for(j = 1; j<duplicates[i][0].num_dups; j++){
+			printf("%s%s = %s%s\n", duplicates[i][j].fp->path, duplicates[i][j].fp->name, duplicates[i][0].fp->path, duplicates[i][0].fp->name);
 		}
 		printf("\n\n");
 	}
