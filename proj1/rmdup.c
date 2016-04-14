@@ -15,11 +15,12 @@ int comp_func(const void* file1, const void* file2){
 
 	if(stat(path1, &file_info1) == 1) {
 		fprintf(stderr, "Error getting data about a file. (%s)\n", strerror(errno));
-		return;
+		return 0;
 	}
 
 	if(stat(path2, &file_info2) == 1){
 		fprintf(stderr, "Error getting data about a file. (%s)\n",strerror(errno));
+		return 0;
 	}
 
 	// = file_info1.st_time - file_info2.st_time
@@ -34,30 +35,35 @@ int comp_func(const void* file1, const void* file2){
 	else if(time_dif < 0) //file 1 is older
 		return -1;
 
-	//checking case
-
-/*	char name1[50],name2[50];
-	strcpy(name1, ((file_path*) file1)->name);
-	strcpy(name2, ((file_path*) file2)->name);
-
-	//use lowercase to compare filenames
-	if(name1[0] > 'A' && name1[0] < 'Z')
-		name1[0] += 32; 
-
-	if(name2[0] > 'A' && name2[0] < 'Z')
-		name2[0] += 32;
-
-	int ret = strcmp(name1,name2);*/
-
-
 	return 0;
-} //FIXME more useful to sort by date modified???
-
-//TODO int dup_file_comp(const void* file1, const void* file2)
+} 
 
 
 int same_files(const file_path file1,const file_path file2) {
 	//TODO check permissions and content	
+	
+	struct stat file_info1, file_info2;
+	char path1[255],path2[255];
+
+	strcpy(path1,file1.path);
+	strcat(path1,file1.name);
+
+	strcpy(path2,file2.path);
+	strcat(path2,file2.name);
+
+	if(stat(path1, &file_info1) == 1) {
+		fprintf(stderr, "Error getting data about a file. (%s)\n", strerror(errno));
+		return -1;
+	}
+
+	if(stat(path2, &file_info2) == 1){
+		fprintf(stderr, "Error getting data about a file. (%s)\n",strerror(errno));
+		return -1;
+	}
+
+	//
+
+
 	return 0;
 }
 
@@ -120,12 +126,7 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 		}
 	}
 	
-	//for(i = 0; i< *n_duplicates; i++){
-	//	qsort(duplicates[i]; duplicates[i][0].num_dups; sizeof(dup_file); dup_file_comp); //TODO
-	//}
-	
 	//TODO remove -- for debug purposes only
-	
 	for(i = 0; i < *n_duplicates; i++){
 		for(j = 0; j<duplicates[i][0].num_dups; j++){
 			printf("%s%s = ", duplicates[i][j].fp->path, duplicates[i][j].fp->name);

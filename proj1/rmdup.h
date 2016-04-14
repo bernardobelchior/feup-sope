@@ -60,9 +60,9 @@ void print_file(const char* path, int output);
 file_path* read_from_file(const char* filepath, int* size); 
 
 /**
- * \brief function used to order files by alphabetical order
+ * \brief function used to order files by date of modification
  * 
- * @ret 1 if file1 > file2, 0 if equal, -1 if lower
+ * @ret 1 if file1 is younger, 0 if equal, -1 if older
  * */
 int comp_func(const void* file1, const void*  file2);
 

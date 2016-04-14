@@ -2,17 +2,17 @@
 
 int is_directory(const char* full_path) {
 	struct stat file_info;
-	if(stat(full_path, &file_info) == -1) {
+	if(lstat(full_path, &file_info) == -1) {
 		perror(strerror(errno));
 		perror("Error getting data about directory.");
 		return 0;
 	}
-	return S_ISDIR(file_info.st_mode);
+	return (S_ISDIR(file_info.st_mode) && !S_ISLNK(file_info.st_mode));
 }
 
 int is_regular_file(const char* full_path){
 	struct stat file_info;
-	if(stat(full_path, &file_info) == -1){
+	if(lstat(full_path, &file_info) == -1){
 		perror(strerror(errno));
 		perror("Error getting data about directory.");
 		return 0;
