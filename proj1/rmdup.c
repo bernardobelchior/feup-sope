@@ -89,6 +89,8 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 
 
 		for(j=i+1;j < files_size; j++){
+			if(same_files(files[i], files[j])){
+				printf("butarde\n"); //FIXME remove
 			if(new_dup){ 			//first duplicate of a file
 				curr_size = 2;
 				(*n_duplicates)++; //increments the size of the duplicates array
@@ -115,10 +117,20 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 				}
 			}
 		}
+		}
 	}
 	
-	for(i = 0; i< *n_duplicates; i++){
+	//for(i = 0; i< *n_duplicates; i++){
 	//	qsort(duplicates[i]; duplicates[i][0].num_dups; sizeof(dup_file); dup_file_comp); //TODO
+	//}
+	
+	//TODO remove -- for debug purposes only
+	
+	for(i = 0; i < *n_duplicates; i++){
+		for(j = 0; j<duplicates[i][0].num_dups; j++){
+			printf("%s%s = ", duplicates[i][j].fp->path, duplicates[i][j].fp->name);
+		}
+		printf("\n\n");
 	}
 	return duplicates;
 }
@@ -210,7 +222,8 @@ int main(int argc, char* argv[]) {
 	for(i = 0; i < files_size; i++)
 		printf("%s%s\n",files[i].path, files[i].name);
 
-	//check_duplicate_files(filepath, files, files_size); TODO
+	int n_duplicates;
+	check_duplicate_files(filepath, files, files_size, &n_duplicates); //TODO
 
 	return 0;
 }
