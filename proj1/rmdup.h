@@ -46,7 +46,7 @@ int same_files(const file_path file1,const file_path file2);
  * 
  * the bidimensional arrays will be sorted by oldest modification so that the first element of an array (v[i][0]) will be the oldest
  */
-dup_file **check_duplicate_files(const char* filepath, file_path* *files, int files_size, *int n_dupicates); 
+dup_file **check_duplicate_files(const char* filepath, file_path *files, int files_size, int *n_dupicates); 
 
 
 /**

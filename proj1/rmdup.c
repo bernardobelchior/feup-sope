@@ -1,10 +1,42 @@
 #include "rmdup.h"
 
 int comp_func(const void* file1, const void* file2){
+	
+	struct stat file_info1, file_info2;
+
+	char path1[255], path2[255];
+
+	strcpy (path1,((file_path *)file1)->path);
+	strcat (path1,((file_path *)file1)->name);
+
+	strcpy (path2,((file_path *)file2)->path);
+	strcat (path2,((file_path *)file2)->name);
+
+
+	if(stat(path1, &file_info1) == 1) {
+		fprintf(stderr, "Error getting data about a file. (%s)\n", strerror(errno));
+		return;
+	}
+
+	if(stat(path2, &file_info2) == 1){
+		fprintf(stderr, "Error getting data about a file. (%s)\n",strerror(errno));
+	}
+
+	// = file_info1.st_time - file_info2.st_time
+	double time_dif = difftime (file_info1.st_mtime,file_info2.st_mtime);
+
+	if(time_dif > 0) // file 1 was modified more recently
+		return 1;
+
+	else if(time_dif == 0) //same modify date (should never happen)
+		return 0;
+
+	else if(time_dif < 0) //file 1 is older
+		return -1;
 
 	//checking case
 
-	char name1[50],name2[50];
+/*	char name1[50],name2[50];
 	strcpy(name1, ((file_path*) file1)->name);
 	strcpy(name2, ((file_path*) file2)->name);
 
@@ -15,8 +47,10 @@ int comp_func(const void* file1, const void* file2){
 	if(name2[0] > 'A' && name2[0] < 'Z')
 		name2[0] += 32;
 
-	int ret = strcmp(name1,name2);
-	return ret;
+	int ret = strcmp(name1,name2);*/
+
+
+	return 0;
 } //FIXME more useful to sort by date modified???
 
 //TODO int dup_file_comp(const void* file1, const void* file2)
