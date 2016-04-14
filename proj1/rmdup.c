@@ -127,35 +127,36 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 		for(j=i+1;j < files_size; j++){
 			
 			if(same_files(files[i], files[j])){
-				printf("butarde - i = %d\n%s\n",i,files[j].name); //FIXME remove
+				printf("butarde - i = %d\n%s%s\n",i,files[j].path,files[j].name); //FIXME remove
 
 				if(new_dup){ 			//first duplicate of a file
 					curr_size = 2;
 					(*n_duplicates)++; //increments the size of the duplicates array
-					printf("%d\n\n",*n_duplicates);
+					printf("%d\n",*n_duplicates);
 					duplicates = realloc(duplicates, *n_duplicates * sizeof(dup_file *));
-					
 					new_dup = 0; //resets boolean
 
-					duplicates[i] = (dup_file *)malloc(curr_size * sizeof(dup_file));
+					duplicates[*n_duplicates - 1] = (dup_file *)malloc(curr_size * sizeof(dup_file));
 
-					duplicates[i][0].fp = &files[i];
-					duplicates[i][0].num_dups = 2;
+					duplicates[*n_duplicates - 1][0].fp = &files[i];
+					duplicates[*n_duplicates - 1][0].num_dups = 2;
 
-					duplicates[i][1].fp = &files[j];
-					duplicates[i][1].num_dups = 2;
+					duplicates[*n_duplicates - 1][1].fp = &files[j];
+					duplicates[*n_duplicates - 1][1].num_dups = 2;
 				}
 
 				else{ 
-					curr_size ++;
-					duplicates[i] = realloc(duplicates[i],curr_size * sizeof(dup_file *));
-					duplicates[i][curr_size - 1].fp = &files[j];
-					duplicates[i][curr_size - 1].num_dups = duplicates[i][0].num_dups;
+					curr_size++;
+					printf("old dup, j = %d;;currsize = %d\n", j,curr_size);
+					duplicates[*n_duplicates - 1] = realloc(duplicates[*n_duplicates - 1],curr_size * sizeof(dup_file *));
+/*					printf("Realloc done, curr size = %d\n\n",curr_size);
+					duplicates[*n_duplicates - 1][curr_size - 1].fp = &files[j];
+					duplicates[*n_duplicates - 1][curr_size - 1].num_dups = duplicates[*n_duplicates - 1][0].num_dups;
 
 					int k = 0;
 					for(k = 0; k < curr_size; k++){ 	//increments the duplicate count on every duplicate file
-						duplicates[i][k].num_dups++;
-					}
+						(duplicates[*n_duplicates - 1][k].num_dups)++;
+					}*/ //FIXME invalid write somewhere here, fix this!
 				}
 			}
 		}
