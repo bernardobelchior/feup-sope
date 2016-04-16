@@ -127,12 +127,10 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 		for(j=i+1;j < files_size; j++){
 			
 			if(same_files(files[i], files[j])){
-				printf("butarde - i = %d\n%s%s\n",i,files[j].path,files[j].name); //FIXME remove
 
 				if(new_dup){ 			//first duplicate of a file
 					curr_size = 2;
 					(*n_duplicates)++; //increments the size of the duplicates array
-					printf("%d\n",*n_duplicates);
 					duplicates = realloc(duplicates, *n_duplicates * sizeof(dup_file *));
 					new_dup = 0; //resets boolean
 
@@ -147,9 +145,7 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 
 				else{ 
 					curr_size++;
-					printf("old dup, j = %d;;currsize = %d\n", j,curr_size);
 					duplicates[*n_duplicates - 1] = realloc(duplicates[*n_duplicates - 1],curr_size * sizeof(dup_file));
-					printf("Realloc done, curr size = %d\n\n",curr_size);
 					duplicates[*n_duplicates - 1][curr_size - 1].fp = &files[j];
 					duplicates[*n_duplicates - 1][curr_size - 1].num_dups = duplicates[*n_duplicates - 1][0].num_dups;
 					
@@ -163,13 +159,7 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 		}
 	}
 
-	//TODO remove -- for debug purposes only
-	for(i = 0; i < *n_duplicates; i++){
-		for(j = 1; j<duplicates[i][0].num_dups; j++){
-			printf("%s%s = %s%s\n", duplicates[i][j].fp->path, duplicates[i][j].fp->name, duplicates[i][0].fp->path, duplicates[i][0].fp->name);
-		}
-		printf("\n\n");
-	}
+	
 	return duplicates;
 }
 
@@ -238,7 +228,6 @@ int main(int argc, char* argv[]) {
 	const char* filepath = "./files.txt";
 	int pid = fork();
 	int files_size = 0;
-	int i = 0;
 
 	if(pid < 0){ //error
 		fprintf(stderr,"main: fork() failed!\n");
@@ -255,10 +244,6 @@ int main(int argc, char* argv[]) {
 
 	file_path* files =	read_from_file(filepath, &files_size);
 	qsort(files, files_size, sizeof(file_path), comp_func);
-
-	//FIXME for debug purposes, delete when done
-	for(i = 0; i < files_size; i++)
-		printf("%s%s\n",files[i].path, files[i].name);
 
 	int n_duplicates;
 	check_duplicate_files(filepath, files, files_size, &n_duplicates); //TODO
