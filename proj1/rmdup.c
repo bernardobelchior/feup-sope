@@ -29,7 +29,7 @@ int comp_func(const void* file1, const void* file2){
 	if(time_dif > 0) // file 1 was modified more recently
 		return 1;
 
-	else if(time_dif == 0) //same modify date (should never happen)
+	else if(time_dif == 0) //same modify date (should never happen), does not matter even if it happens...
 		return 0;
 
 	else if(time_dif < 0) //file 1 is older
@@ -201,7 +201,7 @@ file_path* read_from_file(const char* filepath, int* size) {
 	char path_buffer[200], name_buffer[100];
 	int i = 0;
 
-	while( fscanf(file, "%s %s",path_buffer, name_buffer) != EOF){
+	while( fscanf(file, "%s\n%s",path_buffer, name_buffer) != EOF){
 
 		files = realloc(files, (i+1) * sizeof(file_path));
 		files[i].name = (char *)malloc(50*sizeof(char));
@@ -217,6 +217,32 @@ file_path* read_from_file(const char* filepath, int* size) {
 
 	return files;
 }
+
+void create_links(dup_file** duplicates, int n_duplicates) {
+	int i;
+	for(i = 0; i < n_duplicates; i++) {
+		int j;
+		char src_full_path[strlen(duplicates[i][0].fp->path) + strlen(duplicates[i][0].fp->name) + 1];
+			strcpy(src_full_path, duplicates[i][0].fp->path);
+			strcat(src_full_path, duplicates[i][0].fp->name);
+		for(j = 1; j < duplicates[i]->num_dups; j++) {
+			//CREATE LINKS
+			char dest_full_path[strlen(duplicates[i][j].fp->path) + strlen(duplicates[i][j].fp->name) + 1];
+			strcpy(dest_full_path, duplicates[i][j].fp->path);
+			strcat(dest_full_path, duplicates[i][j].fp->name);
+			printf("%s == %s\n", src_full_path, dest_full_path);	
+			if(unlink(dest_full_path) == -1) {
+				fprintf(stderr, "Error unlinking file at %s. (%s)\n", dest_full_path, strerror(errno));
+			} else {
+				if(link(src_full_path, dest_full_path) == -1) {
+					fprintf(stderr, "Error linking file at %s to %s. (%s)\n", dest_full_path, src_full_path, strerror(errno));
+				} else {
+					printf("Link succesfully created.\n");
+				}
+			}
+		}
+	}
+} 
 
 int main(int argc, char* argv[]) {
 
@@ -246,7 +272,9 @@ int main(int argc, char* argv[]) {
 	qsort(files, files_size, sizeof(file_path), comp_func);
 
 	int n_duplicates;
-	check_duplicate_files(filepath, files, files_size, &n_duplicates); //TODO
+	dup_file** duplicates =	check_duplicate_files(filepath, files, files_size, &n_duplicates); //TODO
 
+	create_links(duplicates, n_duplicates);
+	
 	return 0;
 }

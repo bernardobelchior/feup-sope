@@ -66,5 +66,9 @@ file_path* read_from_file(const char* filepath, int* size);
  * */
 int comp_func(const void* file1, const void*  file2);
 
+/**
+ * \brief function used to create the links between the duplicate files
+ */
+void create_links(dup_file** duplicates, int n_duplicates); 
 
 #endif

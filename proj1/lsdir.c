@@ -59,7 +59,7 @@ void read_directory(int file, const char* dir_path) {
 					int is_reg = is_regular_file(path);
 					if(is_reg != 0){
 						char file_line[255];
-						sprintf(file_line, "%s %s\n", dir_path, child->d_name);  //FIXME try to find a way to do this without the space
+						sprintf(file_line, "%s\n%s\n", dir_path, child->d_name);  //FIXME try to find a way to do this without the space
 						write(file, file_line, strlen(file_line));
 					}
 			}
