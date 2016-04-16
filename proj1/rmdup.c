@@ -148,15 +148,16 @@ dup_file** check_duplicate_files(const char* filepath, file_path *files, int fil
 				else{ 
 					curr_size++;
 					printf("old dup, j = %d;;currsize = %d\n", j,curr_size);
-					duplicates[*n_duplicates - 1] = realloc(duplicates[*n_duplicates - 1],curr_size * sizeof(dup_file *));
-/*					printf("Realloc done, curr size = %d\n\n",curr_size);
+					duplicates[*n_duplicates - 1] = realloc(duplicates[*n_duplicates - 1],curr_size * sizeof(dup_file));
+					printf("Realloc done, curr size = %d\n\n",curr_size);
 					duplicates[*n_duplicates - 1][curr_size - 1].fp = &files[j];
 					duplicates[*n_duplicates - 1][curr_size - 1].num_dups = duplicates[*n_duplicates - 1][0].num_dups;
-
+					
 					int k = 0;
 					for(k = 0; k < curr_size; k++){ 	//increments the duplicate count on every duplicate file
-						(duplicates[*n_duplicates - 1][k].num_dups)++;
-					}*/ //FIXME invalid write somewhere here, fix this!
+						duplicates[*n_duplicates - 1][k].num_dups++;
+					}
+
 				}
 			}
 		}
