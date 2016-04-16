@@ -202,7 +202,6 @@ file_path* read_from_file(const char* filepath, int* size) {
 	int i = 0;
 
 	while( fscanf(file, "%s\n%s",path_buffer, name_buffer) != EOF){
-
 		files = realloc(files, (i+1) * sizeof(file_path));
 		files[i].name = (char *)malloc(50*sizeof(char));
 		files[i].path = (char *)malloc(200*sizeof(char));
@@ -218,7 +217,9 @@ file_path* read_from_file(const char* filepath, int* size) {
 	return files;
 }
 
-void create_links(dup_file** duplicates, int n_duplicates) {
+void create_links(char* links_file_path, dup_file** duplicates, int n_duplicates) {
+	FILE* links_file = fopen(links_file_path, "w");
+
 	int i;
 	for(i = 0; i < n_duplicates; i++) {
 		int j;
@@ -226,18 +227,18 @@ void create_links(dup_file** duplicates, int n_duplicates) {
 			strcpy(src_full_path, duplicates[i][0].fp->path);
 			strcat(src_full_path, duplicates[i][0].fp->name);
 		for(j = 1; j < duplicates[i]->num_dups; j++) {
-			//CREATE LINKS
+			//Creates links
 			char dest_full_path[strlen(duplicates[i][j].fp->path) + strlen(duplicates[i][j].fp->name) + 1];
 			strcpy(dest_full_path, duplicates[i][j].fp->path);
 			strcat(dest_full_path, duplicates[i][j].fp->name);
-			printf("%s == %s\n", src_full_path, dest_full_path);	
 			if(unlink(dest_full_path) == -1) {
 				fprintf(stderr, "Error unlinking file at %s. (%s)\n", dest_full_path, strerror(errno));
 			} else {
 				if(link(src_full_path, dest_full_path) == -1) {
 					fprintf(stderr, "Error linking file at %s to %s. (%s)\n", dest_full_path, src_full_path, strerror(errno));
 				} else {
-					printf("Link succesfully created.\n");
+					fprintf(links_file, "%s linked to %s\n", dest_full_path, src_full_path);
+					fprintf(stdout, "%s linked to %s\n", dest_full_path, src_full_path);
 				}
 			}
 		}
@@ -251,7 +252,15 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	const char* filepath = "./files.txt";
+	char* file_input_name = "files.txt";
+	char* link_file_name = "hlinks.txt";
+	char filepath[strlen(argv[1]) + strlen(file_input_name) + 1];
+	strcpy(filepath, argv[1]);
+	strcat(filepath, file_input_name);
+	char linkspath[strlen(argv[1]) + strlen(link_file_name) + 1];
+	strcpy(linkspath, argv[1]);
+	strcat(linkspath, link_file_name);
+	
 	int pid = fork();
 	int files_size = 0;
 
@@ -260,7 +269,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if(pid == 0) { //child uses lsdir to list all the files in the directory and in its subdirectories and stores the list in a text file
-		execlp("./lsdir", "lsdir", argv[1], filepath, NULL);
+		execlp("./lsdir", "lsdir", argv[1], NULL);
 		exit(0);
 	} 
 
@@ -268,13 +277,13 @@ int main(int argc, char* argv[]) {
 		waitpid(pid, NULL, 0);
 	}
 
-	file_path* files =	read_from_file(filepath, &files_size);
+	file_path* files = read_from_file(filepath, &files_size);
 	qsort(files, files_size, sizeof(file_path), comp_func);
 
 	int n_duplicates;
-	dup_file** duplicates =	check_duplicate_files(filepath, files, files_size, &n_duplicates); //TODO
+	dup_file** duplicates =	check_duplicate_files(filepath, files, files_size, &n_duplicates);
 
-	create_links(duplicates, n_duplicates);
+	create_links(linkspath, duplicates, n_duplicates);
 	
 	return 0;
 }

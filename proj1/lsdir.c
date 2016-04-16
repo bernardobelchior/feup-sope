@@ -89,14 +89,16 @@ int list_dir(const char* dir_path, const char* filepath){
 }
 
 int main(int argc, char* argv[]) {
-	if(argc < 2 || argc > 3) {
+	char* file_output_name = "files.txt";
+
+	if(argc != 2) {
 		fprintf(stderr, "Invalid number of arguments. \nProgram must be called as:\n./lsdir <directory>\nWhere <directory> is a valid directory that ends in \'/\'.\n");
 		return 1;
-	} else if (argc == 2){
-		return list_dir(argv[1], "./files.txt");
 	} else {
-		return list_dir(argv[1], argv[2]);
+		char file_output_path[strlen(argv[1]) + strlen(file_output_name) + 1];
+		strcpy(file_output_path, argv[1]);
+		strcat(file_output_path, file_output_name);
+		return list_dir(argv[1], file_output_path);
 	}
-
 	return 0;
 }

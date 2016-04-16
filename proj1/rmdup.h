@@ -69,6 +69,6 @@ int comp_func(const void* file1, const void*  file2);
 /**
  * \brief function used to create the links between the duplicate files
  */
-void create_links(dup_file** duplicates, int n_duplicates); 
+void create_links(char* links_file_path, dup_file** duplicates, int n_duplicates); 
 
 #endif
