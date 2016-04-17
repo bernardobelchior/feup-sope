@@ -1,1 +1,0 @@
-testecp/dup1 linked to testecp/subdir/dup1 :: old inode = 787200 ,  new inode = 787200
