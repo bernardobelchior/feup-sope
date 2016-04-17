@@ -216,7 +216,6 @@ file_path* read_from_file(const char* filepath, int* size) {
 
 	return files;
 }
-
 void create_links(char* links_file_path, dup_file** duplicates, int n_duplicates) {
 	FILE* links_file = fopen(links_file_path, "w");
 
@@ -231,19 +230,38 @@ void create_links(char* links_file_path, dup_file** duplicates, int n_duplicates
 			char dest_full_path[strlen(duplicates[i][j].fp->path) + strlen(duplicates[i][j].fp->name) + 1];
 			strcpy(dest_full_path, duplicates[i][j].fp->path);
 			strcat(dest_full_path, duplicates[i][j].fp->name);
+
+			struct stat file_info;
+			ino_t orig_inode, new_inode;
+
+			if(stat(dest_full_path,&file_info) == 1){
+				fprintf(stderr, "Error getting data about a file. (%s)\n", strerror(errno));
+				return;
+			}
+
+			orig_inode = file_info.st_ino;
+
 			if(unlink(dest_full_path) == -1) {
 				fprintf(stderr, "Error unlinking file at %s. (%s)\n", dest_full_path, strerror(errno));
 			} else {
 				if(link(src_full_path, dest_full_path) == -1) {
 					fprintf(stderr, "Error linking file at %s to %s. (%s)\n", dest_full_path, src_full_path, strerror(errno));
 				} else {
-					fprintf(links_file, "%s linked to %s\n", dest_full_path, src_full_path);
+
+					if(stat(dest_full_path,&file_info) == 1){
+						fprintf(stderr,"Error getting data about a file. (%s)\n",strerror(errno));
+					}
+
+					new_inode = file_info.st_ino;
+
+					fprintf(links_file, "%s linked to %s :: old inode = %li ,  new inode = %li\n", dest_full_path, src_full_path,orig_inode,new_inode);
 					fprintf(stdout, "%s linked to %s\n", dest_full_path, src_full_path);
 				}
 			}
 		}
 	}
 } 
+
 
 int main(int argc, char* argv[]) {
 
