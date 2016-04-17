@@ -281,13 +281,14 @@ int main(int argc, char* argv[]) {
 	
 	int pid = fork();
 	int files_size = 0;
+	
 
 	if(pid < 0){ //error
 		fprintf(stderr,"main: fork() failed!\n");
 	}
 
 	if(pid == 0) { //child uses lsdir to list all the files in the directory and in its subdirectories and stores the list in a text file
-		execlp("./lsdir", "lsdir", argv[1], NULL);
+		execlp("./bin/lsdir", "lsdir", argv[1], NULL);
 		exit(0);
 	} 
 
