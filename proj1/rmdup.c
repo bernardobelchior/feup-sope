@@ -288,7 +288,25 @@ int main(int argc, char* argv[]) {
 	}
 
 	if(pid == 0) { //child uses lsdir to list all the files in the directory and in its subdirectories and stores the list in a text file
-		execlp("./bin/lsdir", "lsdir", argv[1], NULL);
+		char lsdir_path[256];
+		int n = strlen(argv[0]);
+
+		while(argv[0][n] != '/')
+			n--;
+
+
+
+		int m = 0;
+
+		while(m <= n){
+			lsdir_path[m] = argv[0][m];
+			m++;
+		}
+
+		lsdir_path[m+1] = '\0';
+		strcat(lsdir_path,"lsdir");
+
+		execlp(lsdir_path, "lsdir", argv[1], NULL);
 		exit(0);
 	} 
 
