@@ -4,5 +4,6 @@ lsdir
 proj1/files.txt
 proj1/rmdup
 proj1/lsdir
-proj1/teste/
+proj1/teste*
+proj1/T3*
 *.swp
