@@ -6,6 +6,11 @@
 
 typedef enum { NORTH, SOUTH, EAST, WEST } direction;
 
+typedef struct {
+	int id;
+	int parking_time;
+} vehicle_t;
+
 int generate_vehicles = 1;
 
 void alarm_fired(int signo) {
@@ -13,11 +18,23 @@ void alarm_fired(int signo) {
 		generate_vehicles = 0;
 }
 
+void generate_vehicle(int update_rate) {
+	static int nextId = 1;
+	vehicle_t vehicle;
+
+	vehicle.id = nextId;
+	nextId++;
+	vehicle.parking_time = (rand() % 10) + 1;
+
+	printf("I am vehicle with id: %d and I will park for %d ticks.\n", vehicle.id, vehicle.parking_time);
+}
+
 void start_generator(int generation_time, int update_rate) {
 	alarm(generation_time);
 
 	while(generate_vehicles) {
-		//generate vehicles
+		generate_vehicle(update_rate);
+		usleep(update_rate*1000);
 	}
 }
 
