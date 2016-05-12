@@ -1,6 +1,11 @@
+CC=gcc
+CFLAGS=-I 
 
-parque: park.c gerador
-	cc -c park.c -o parque
+parque: clean gerador
+	$(CC) park.c -o parque
 
-gerador: generator.c
-	cc -c generator.c -o gerador
+gerador: 
+	$(CC) generator.c -o gerador
+
+clean: 
+	rm -f parque gerador
