@@ -4,11 +4,12 @@
 #include <unistd.h>
 #include <signal.h>
 
-typedef enum { NORTH, SOUTH, EAST, WEST } direction;
+typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
 
 typedef struct {
 	int id;
 	int parking_time;
+	direction_t direction;
 } vehicle_t;
 
 int generate_vehicles = 1;
@@ -25,8 +26,9 @@ void generate_vehicle(int update_rate) {
 	vehicle.id = nextId;
 	nextId++;
 	vehicle.parking_time = (rand() % 10) + 1;
+	vehicle.direction = rand() % 4;
 
-	printf("I am vehicle with id: %d and I will park for %d ticks.\n", vehicle.id, vehicle.parking_time);
+	printf("I am vehicle with id: %d, I will park for %d ticks and use the %d exit.\n", vehicle.id, vehicle.parking_time, vehicle.direction);
 }
 
 void start_generator(int generation_time, int update_rate) {
