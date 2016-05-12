@@ -1,3 +1,6 @@
+CC = gcc
+CFLAGS = -Wall -lpthread
+TARGET = parque
 
 parque: park.c
-	cc -c park.c -o parque
+	$(CC) $(CFLAGS)  park.c -o parque
