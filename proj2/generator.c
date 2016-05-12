@@ -13,6 +13,14 @@ typedef struct {
 } vehicle_t;
 
 int generate_vehicles = 1;
+FILE* logger; 
+int ticks;
+
+void* vehicle_thread(void* arg) {
+	vehicle_t* vehicle = (vehicle_t*) arg;
+
+	fprintf(logger, "%d;%d;%d;%d\n", ticks, vehicle->id, vehicle->direction, vehicle->parking_time);
+}
 
 void alarm_fired(int signo) {
 	if(signo == SIGALRM)
@@ -32,19 +40,25 @@ int get_ticks_to_next_vehicle() {
 
 void generate_vehicle(int update_rate) {
 	static int nextId = 1;
-	vehicle_t vehicle;
+	vehicle_t* vehicle = (vehicle_t*) malloc(sizeof(vehicle_t));
 
-	vehicle.id = nextId;
+	vehicle->id = nextId;
 	nextId++;
-	vehicle.parking_time = (rand() % 10) + 1;
-	vehicle.direction = rand() % 4;
+	vehicle->parking_time = (rand() % 10) + 1;
+	vehicle->direction = rand() % 4;
 
-	printf("I am vehicle with id: %d, I will park for %d ticks and use the %d exit.\n", vehicle.id, vehicle.parking_time, vehicle.direction);
+	pthread_t thread;
+	pthread_create(&thread, NULL, vehicle_thread, (void*) vehicle);
+	pthread_detach(thread);
 }
 
 void start_generator(int generation_time, int update_rate) {
-	alarm(generation_time);
+	logger = fopen("gerador.log", "w"); 
+	fprintf(logger, "ticks;id;dest;t_est\n");
+	ticks = 0;
 	int ticks_to_next_vehicle = get_ticks_to_next_vehicle();
+
+	alarm(generation_time);
 
 	while(generate_vehicles) {
 		if(ticks_to_next_vehicle == 0) {
@@ -54,6 +68,7 @@ void start_generator(int generation_time, int update_rate) {
 			ticks_to_next_vehicle--;
 
 		usleep(update_rate*1000);
+		ticks+= update_rate;
 	}
 }
 
