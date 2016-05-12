@@ -10,13 +10,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <string.h>
 
-#define NORTH 0 //     0
-#define WEST  1 //  1     3
-#define SOUTH 2 //     2
-#define EAST  3
+#define NORTH 0 // configuration of the "gates"
+#define WEST  1 //    0
+#define SOUTH 2 // 1     3
+#define EAST  3 //    2
 
 #define NUM_CONTROLLERS 4
+
+#define FIFO_PATH_LENGTH 15
 
 void print_usage();
 void *controller_func (void *arg);
@@ -94,22 +97,39 @@ void *controller_func(void *arg){
 	
 
 	int side = (*(int *) arg);
+	char fifo_path[FIFO_PATH_LENGTH];
 
 	switch (side){
 		case NORTH:
-			printf("North Side yo!\n");
+			strcpy(fifo_path,"fifos/fifoN");
+			if(mkfifo(fifo_path,S_IRUSR | S_IXUSR) != 0){
+				printf("\tcontroller_func() :: failed making FIFO\n");
+				exit(4);
+			}
 			break;
-			
+
 		case WEST:
-			printf("West Side yo!\n");
+			strcpy(fifo_path,"fifos/fifoW");
+			if(mkfifo(fifo_path,S_IRUSR | S_IXUSR) != 0){
+				printf("\tcontroller_func() :: failed making FIFO\n");
+				exit(4);
+			}
 			break;
 
 		case SOUTH:
-			printf("South Side yo\n");
+			strcpy(fifo_path,"fifos/fifoS");
+			if(mkfifo(fifo_path,S_IRUSR | S_IXUSR) != 0){
+				printf("\tcontroller_func() :: failed making FIFO\n");
+				exit(4);
+			}
 			break;
 
 		case EAST:
-			printf("East Side yo\n");
+			strcpy(fifo_path,"fifos/fifoE");
+			if(mkfifo(fifo_path,S_IRUSR | S_IXUSR) != 0){
+				printf("\tcontroller_func() :: failed making FIFO\n");
+				exit(4);
+			}
 			break;
 
 		default:
