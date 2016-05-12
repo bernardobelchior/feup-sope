@@ -19,6 +19,17 @@ void alarm_fired(int signo) {
 		generate_vehicles = 0;
 }
 
+int get_ticks_to_next_vehicle() {
+	int random = rand() % 10;
+
+	if(random < 5)
+		return 0;
+	else if(random < 8)
+		return 1;
+	else
+		return 2;
+}
+
 void generate_vehicle(int update_rate) {
 	static int nextId = 1;
 	vehicle_t vehicle;
@@ -33,9 +44,15 @@ void generate_vehicle(int update_rate) {
 
 void start_generator(int generation_time, int update_rate) {
 	alarm(generation_time);
+	int ticks_to_next_vehicle = get_ticks_to_next_vehicle();
 
 	while(generate_vehicles) {
-		generate_vehicle(update_rate);
+		if(ticks_to_next_vehicle == 0) {
+			generate_vehicle(update_rate);
+			ticks_to_next_vehicle = get_ticks_to_next_vehicle();
+		} else
+			ticks_to_next_vehicle--;
+
 		usleep(update_rate*1000);
 	}
 }
