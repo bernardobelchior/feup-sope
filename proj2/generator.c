@@ -19,7 +19,8 @@ int ticks;
 void* vehicle_thread(void* arg) {
 	vehicle_t* vehicle = (vehicle_t*) arg;
 
-	fprintf(logger, "%d;%d;%d;%d\n", ticks, vehicle->id, vehicle->direction, vehicle->parking_time);
+	if(logger != NULL)
+		fprintf(logger, "%d;%d;%d;%d\n", ticks, vehicle->id, vehicle->direction, vehicle->parking_time);
 }
 
 void alarm_fired(int signo) {
@@ -54,7 +55,12 @@ void generate_vehicle(int update_rate) {
 
 void start_generator(int generation_time, int update_rate) {
 	logger = fopen("gerador.log", "w"); 
-	fprintf(logger, "ticks;id;dest;t_est\n");
+
+	if(logger == NULL)
+		fprintf(stderr, "Logger could not be open.\n");
+	else
+		fprintf(logger, "ticks;id;dest;t_est\n");
+	
 	ticks = 0;
 	int ticks_to_next_vehicle = get_ticks_to_next_vehicle();
 
