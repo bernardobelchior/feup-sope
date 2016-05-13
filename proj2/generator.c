@@ -21,6 +21,8 @@ void* vehicle_thread(void* arg) {
 
 	if(logger != NULL)
 		fprintf(logger, "%d;%d;%d;%d\n", ticks, vehicle->id, vehicle->direction, vehicle->parking_time);
+
+	return NULL;
 }
 
 void alarm_fired(int signo) {

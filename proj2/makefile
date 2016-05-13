@@ -1,11 +1,13 @@
-CC=gcc
-CFLAGS=-I 
+CC = gcc
+CFLAGS = -Wall -lpthread
+TARGET = parque
+MKDIR = mkdir -p
 
 parque: clean gerador
-	$(CC) park.c -o parque -pthread
+	$(CC) $(CFLAGS) park.c -o parque
 
-gerador: 
-	$(CC) generator.c -o gerador -pthread
+gerador:
+	$(CC) $(CFLAGS) generator.c -o gerador
 
-clean: 
+clean:
 	rm -f parque gerador
