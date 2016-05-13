@@ -1,7 +1,12 @@
 CC = gcc
 CFLAGS = -Wall -lpthread
 TARGET = parque
+MKDIR = mkdir -p
 
-parque: park.c
-	$(CC) $(CFLAGS)  park.c -o parque
+parque: clean gerador
+	$(CC) $(CFLAGS) park.c -o parque
 
+gerador:
+
+clean:
+	rm -f parque gerador
