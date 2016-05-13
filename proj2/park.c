@@ -19,7 +19,8 @@
 
 #define NUM_CONTROLLERS 4
 
-#define FIFO_PATH_LENGTH 15
+#define FIFO_PATH_LENGTH 8
+#define FIFO_MODE 0777
 
 void print_usage();
 void *controller_func (void *arg);
@@ -93,7 +94,7 @@ void print_usage(){
  */
 void *controller_func(void *arg){
 
-	//TODO create FIFOS, read requests, create valet threads and react to the closure of the park
+	//TODO read requests, create valet threads and react to the closure of the park
 	
 
 	int side = (*(int *) arg);
@@ -101,32 +102,32 @@ void *controller_func(void *arg){
 
 	switch (side){
 		case NORTH:
-			strcpy(fifo_path,"fifos/fifoN");
-			if(mkfifo(fifo_path,S_IRUSR | S_IXUSR) != 0){
+			strcpy(fifo_path,"fifoN");
+			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
 				exit(4);
 			}
 			break;
 
 		case WEST:
-			strcpy(fifo_path,"fifos/fifoW");
-			if(mkfifo(fifo_path,S_IRUSR | S_IXUSR) != 0){
+			strcpy(fifo_path,"fifoW");
+			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
 				exit(4);
 			}
 			break;
 
 		case SOUTH:
-			strcpy(fifo_path,"fifos/fifoS");
-			if(mkfifo(fifo_path,S_IRUSR | S_IXUSR) != 0){
+			strcpy(fifo_path,"fifoS");
+			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
 				exit(4);
 			}
 			break;
 
 		case EAST:
-			strcpy(fifo_path,"fifos/fifoE");
-			if(mkfifo(fifo_path,S_IRUSR | S_IXUSR) != 0){
+			strcpy(fifo_path,"fifoE");
+			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
 				exit(4);
 			}
@@ -134,6 +135,11 @@ void *controller_func(void *arg){
 
 		default:
 			break; //not expected
+	}
+
+	if(unlink(fifo_path) != 0){
+		printf("\tcontroller_func() :: failed unlinking FIFO\n");
+		exit(4);
 	}
 	return NULL;
 }
