@@ -3,10 +3,10 @@ CFLAGS = -Wall -lpthread
 TARGET = parque
 MKDIR = mkdir -p
 
-parque: clean gerador
+parque: clean gerador vehicle.h
 	$(CC) $(CFLAGS) park.c -o parque
 
-gerador:
+gerador: vehicle.h
 	$(CC) $(CFLAGS) generator.c -o gerador
 
 clean:

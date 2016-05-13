@@ -3,14 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
-
-typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
-
-typedef struct {
-	int id;
-	int parking_time;
-	direction_t direction;
-} vehicle_t;
+#include "vehicle.h"
 
 int generate_vehicles = 1;
 FILE* logger; 

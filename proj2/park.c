@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+#include "vehicle.h"
 
 #define NORTH 0 // configuration of the "gates"
 #define WEST  1 //    0
