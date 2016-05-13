@@ -97,6 +97,7 @@ void *controller_func(void *arg){
 	//TODO read requests, create valet threads and react to the closure of the park
 	
 
+	//Creating FIFO
 	int side = (*(int *) arg);
 	char fifo_path[FIFO_PATH_LENGTH];
 
