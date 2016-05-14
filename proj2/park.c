@@ -18,8 +18,9 @@
 
 #define FIFO_PATH_LENGTH 8
 #define FIFO_MODE 0777
-
 #define MAX_FIFONAME_SIZE 31
+
+#define SV_IDENTIFIER -1
 
 void print_usage();
 void *controller_func (void *arg);
@@ -41,10 +42,11 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 
-	int n_spaces, time_open;
+	int n_spaces, time_open, n_vacant;
 
 	n_spaces = atoi(argv[1]);
 	time_open = atoi(argv[2]);
+	n_vacant = n_spaces;
 
 	if(n_spaces < 0 || time_open < 0){
 		print_usage();
@@ -66,6 +68,26 @@ int main(int argc, char *argv[]){
 	}
 	
 	//wait for time and send SV
+	sleep(time_open);
+
+
+	int fd_N, fd_E, fd_O, fd_S;
+
+	fd_N = open("fifoN",O_WRONLY | O_NONBLOCK);
+	fd_E = open("fifoE",O_WRONLY | O_NONBLOCK);
+	fd_O = open("fifoO",O_WRONLY | O_NONBLOCK);
+	fd_S = open("fifoS",O_WRONLY | O_NONBLOCK);
+	
+	if(fd_N == -1 || fd_E == -1 || fd_O == -1 || fd_S == -1){
+		printf("main() :: error opening controller fifo");
+		return 4;
+	}
+
+	int sv = SV_IDENTIFIER;
+	write(fd_N, &sv, sizeof(int));
+	write(fd_E, &sv, sizeof(int));
+	write(fd_O, &sv, sizeof(int));
+	write(fd_S, &sv, sizeof(int));
 	
 	for(i = 0; i < 4; i++){
 		if(pthread_join(controllers[i],NULL) != 0){ 
@@ -102,6 +124,7 @@ void *controller_func(void *arg){
 	//Creating FIFO
 	direction_t side = (*(int *) arg);
 	char fifo_path[FIFO_PATH_LENGTH];
+	int closed = 0;
 
 	switch (side){
 		case NORTH:
@@ -113,7 +136,7 @@ void *controller_func(void *arg){
 			break;
 
 		case WEST:
-			strcpy(fifo_path,"fifoW");
+			strcpy(fifo_path,"fifoO");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
 				exit(4);
@@ -144,7 +167,7 @@ void *controller_func(void *arg){
 	
 	//opening the fifo for reading
 	int fifo_fd;
-	fifo_fd = open(fifo_path,O_RDONLY | O_NONBLOCK);
+	fifo_fd = open(fifo_path,O_RDONLY );//| O_NONBLOCK);
 
 	if(fifo_fd == -1){
 		printf("Error opening file\n");
@@ -153,27 +176,42 @@ void *controller_func(void *arg){
 
 	//Read the request
 	//Each vehicle the generator creates will have the following info
-	// - entrance
-	// - parking time (in clock ticks)
 	// - vehicle identifier
+	// - parking time (in clock ticks)
+	// - entrance
 	// - name of its private fifo
 	
 	int curr_entrance, curr_park_time, curr_id;
 	char *fifo_name, buff[MAX_FIFONAME_SIZE];	
 
 	//TODO get this in a cycle
-	int i = 0;
-	while(i < 100000){
-	read(fifo_fd,&curr_entrance,sizeof(int));
-	read(fifo_fd,&curr_park_time,sizeof(int));
-	read(fifo_fd,&curr_id,sizeof(int));
-	read(fifo_fd,buff,MAX_FIFONAME_SIZE);
+	while(!closed){
+		int x;
+		x = read(fifo_fd,&curr_id,sizeof(int));
 
-	printf("This is the %d entrance:\n\nentrance requested: %d\nparking time: %d\nvehicle id: %d\nfifo name: %s\n",
-			side,curr_entrance,curr_park_time,curr_id,fifo_name);
+		if(curr_id == SV_IDENTIFIER){
+			printf("Closing park..\n");
+			closed = 1;
+		}
 
-	i++;
+		read(fifo_fd,&curr_park_time,sizeof(int));
+		read(fifo_fd,&curr_entrance,sizeof(int));
+		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
+
+		if(x != -1)
+			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
+				side,curr_id, curr_park_time, curr_entrance,buff);
 	}
+
+	//park now closed, handle all remaining requests
+	
+	while(read(fifo_fd, &curr_id,sizeof(int)) != -1){
+
+		read(fifo_fd,&curr_park_time,sizeof(int));
+		read(fifo_fd,&curr_entrance,sizeof(int));
+		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
+	}
+
 
 	if(unlink(fifo_path) != 0){
 		printf("\tcontroller_func() :: failed unlinking FIFO\n");
