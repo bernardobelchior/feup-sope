@@ -12,3 +12,7 @@ typedef struct {
 	direction_t direction;
 	char *fifo_name;
 } vehicle_t;
+
+typedef enum { PARK_FULL, ENTERED, EXITED, PARK_CLOSED} vehicle_status_t;
+
+const char* messages_array[4] = { "cheio!", "entrada", "saida", "encerrado" };
