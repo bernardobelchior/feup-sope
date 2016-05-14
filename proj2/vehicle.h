@@ -10,4 +10,5 @@ typedef struct {
 	int id;
 	int parking_time;
 	direction_t direction;
+	char *fifo_name;
 } vehicle_t;
