@@ -41,6 +41,11 @@ int main(int argc, char *argv[]){
 		print_usage();
 		return 1;
 	}
+	
+	mkfifo("fifoN", FIFO_MODE);
+	mkfifo("fifoS", FIFO_MODE);
+	mkfifo("fifoE", FIFO_MODE);
+	mkfifo("fifoO", FIFO_MODE);
 
 	int n_spaces, time_open, n_vacant;
 
@@ -66,22 +71,21 @@ int main(int argc, char *argv[]){
 			return 3;
 		}
 	}
-	
-	//wait for time and send SV
-	sleep(time_open);
-
 
 	int fd_N, fd_E, fd_O, fd_S;
 
-	fd_N = open("fifoN",O_WRONLY | O_NONBLOCK);
-	fd_E = open("fifoE",O_WRONLY | O_NONBLOCK);
-	fd_O = open("fifoO",O_WRONLY | O_NONBLOCK);
-	fd_S = open("fifoS",O_WRONLY | O_NONBLOCK);
+	fd_N = open("fifoN",O_WRONLY);
+	fd_E = open("fifoE",O_WRONLY);
+	fd_O = open("fifoO",O_WRONLY);
+	fd_S = open("fifoS",O_WRONLY);
 	
 	if(fd_N == -1 || fd_E == -1 || fd_O == -1 || fd_S == -1){
 		printf("main() :: error opening controller fifo");
 		return 4;
 	}
+
+	//wait for time and send SV
+	sleep(time_open);
 
 	int sv = SV_IDENTIFIER;
 	write(fd_N, &sv, sizeof(int));
@@ -89,6 +93,16 @@ int main(int argc, char *argv[]){
 	write(fd_O, &sv, sizeof(int));
 	write(fd_S, &sv, sizeof(int));
 	
+	close(fd_N);
+	close(fd_E);
+	close(fd_O);
+	close(fd_S);
+
+	unlink("fifoN");
+	unlink("fifoS");
+	unlink("fifoE");
+	unlink("fifoO");
+
 	for(i = 0; i < 4; i++){
 		if(pthread_join(controllers[i],NULL) != 0){ 
 			printf("\tmain() :: error joining controller threads\n");
@@ -133,7 +147,7 @@ void *controller_func(void *arg){
 			strcpy(fifo_path,"fifoN");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
-				exit(4);
+				//exit(4);
 			}
 			break;
 
@@ -141,7 +155,7 @@ void *controller_func(void *arg){
 			strcpy(fifo_path,"fifoO");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
-				exit(4);
+				//exit(4);
 			}
 			break;
 
@@ -149,7 +163,7 @@ void *controller_func(void *arg){
 			strcpy(fifo_path,"fifoS");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
-				exit(4);
+				//exit(4);
 			}
 			break;
 
@@ -157,7 +171,7 @@ void *controller_func(void *arg){
 			strcpy(fifo_path,"fifoE");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
 				printf("\tcontroller_func() :: failed making FIFO\n");
-				exit(4);
+				//exit(4);
 			}
 			break;
 
@@ -185,34 +199,32 @@ void *controller_func(void *arg){
 	
 	int curr_entrance, curr_park_time, curr_id;
 	char *fifo_name, buff[MAX_FIFONAME_SIZE];	
+	curr_id = -1;
 
 	//TODO get this in a cycle
-	while(!closed){
+	while(curr_id  != SV_IDENTIFIER) {
 		int x;
 		x = read(fifo_fd,&curr_id,sizeof(int));
 
-		if(curr_id == SV_IDENTIFIER){
+		/*if(curr_id == SV_IDENTIFIER){
 			printf("Closing park..\n");
 			closed = 1;
-		}
+		}*/
 
 		read(fifo_fd,&curr_park_time,sizeof(int));
 		read(fifo_fd,&curr_entrance,sizeof(int));
 		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
 
-		if(x != -1)
+		if(curr_id != SV_IDENTIFIER)
 			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
 				side,curr_id, curr_park_time, curr_entrance,buff);
 		else printf("invalid\n");
 	}
 
+	printf("Closing park..\n");
 	//park now closed, handle all remaining requests
 	
-	while(read(fifo_fd, &curr_id,sizeof(int)) != -1){
-
-		read(fifo_fd,&curr_park_time,sizeof(int));
-		read(fifo_fd,&curr_entrance,sizeof(int));
-		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
+	while(read(fifo_fd, &curr_id,sizeof(int)) != 0){
 	}
 
 	printf("Closing fifos\n");

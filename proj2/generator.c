@@ -174,6 +174,10 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, "Could not set up signal handler for SIGALRM.\n");
 	}
 
+	mkfifo("fifoN", FIFO_MODE);
+	mkfifo("fifoS", FIFO_MODE);
+	mkfifo("fifoE", FIFO_MODE);
+	mkfifo("fifoO", FIFO_MODE);
 	fifos[0] = open("fifoN", O_WRONLY);
 	fifos[1] = open("fifoS", O_WRONLY);
 	fifos[2] = open("fifoE", O_WRONLY);
