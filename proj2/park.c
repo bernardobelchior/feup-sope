@@ -96,6 +96,8 @@ int main(int argc, char *argv[]){
 		}
 	}
 
+	printf("Exiting main...\n");
+
 	return 0;
 }
 
@@ -201,6 +203,7 @@ void *controller_func(void *arg){
 		if(x != -1)
 			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
 				side,curr_id, curr_park_time, curr_entrance,buff);
+		else printf("invalid\n");
 	}
 
 	//park now closed, handle all remaining requests
@@ -212,10 +215,13 @@ void *controller_func(void *arg){
 		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
 	}
 
+	printf("Closing fifos\n");
+	close(fifo_fd);
 
 	if(unlink(fifo_path) != 0){
 		printf("\tcontroller_func() :: failed unlinking FIFO\n");
 		exit(4);
 	}
-	return NULL;
+
+	pthread_exit(NULL);
 }
