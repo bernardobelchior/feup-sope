@@ -13,11 +13,6 @@
 #include <string.h>
 #include "vehicle.h"
 
-#define NORTH 0 // configuration of the "gates"
-#define WEST  1 //    0
-#define SOUTH 2 // 1     3
-#define EAST  3 //    2
-
 #define NUM_CONTROLLERS 4
 
 #define FIFO_PATH_LENGTH 8
@@ -99,7 +94,7 @@ void *controller_func(void *arg){
 	
 
 	//Creating FIFO
-	int side = (*(int *) arg);
+	direction_t side = (*(int *) arg);
 	char fifo_path[FIFO_PATH_LENGTH];
 
 	switch (side){

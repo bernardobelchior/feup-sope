@@ -1,3 +1,9 @@
+/**
+ * park.c
+ *
+ * Created by Bernardo Belchior and Edgar Passos
+ */
+
 typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
 
 typedef struct {

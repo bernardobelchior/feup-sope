@@ -1,3 +1,9 @@
+/**
+ * generator.c
+ *
+ * Created by Bernardo Belchior and Edgar Passos
+ */
+
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
