@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include "vehicle.h"
@@ -18,8 +19,11 @@
 #define FIFO_PATH_LENGTH 8
 #define FIFO_MODE 0777
 
+#define MAX_FIFONAME_SIZE 31
+
 void print_usage();
 void *controller_func (void *arg);
+void *worker_func (void *arg);
 
 /**
  * main thread:
@@ -61,6 +65,8 @@ int main(int argc, char *argv[]){
 		}
 	}
 	
+	//wait for time and send SV
+	
 	for(i = 0; i < 4; i++){
 		if(pthread_join(controllers[i],NULL) != 0){ 
 			printf("\tmain() :: error joining controller threads\n");
@@ -90,7 +96,7 @@ void print_usage(){
  */
 void *controller_func(void *arg){
 
-	//TODO read requests, create valet threads and react to the closure of the park
+	//TODO create valet threads and react to the closure of the park
 	
 
 	//Creating FIFO
@@ -132,6 +138,41 @@ void *controller_func(void *arg){
 
 		default:
 			break; //not expected
+	}
+
+	//TODO read requests
+	
+	//opening the fifo for reading
+	int fifo_fd;
+	fifo_fd = open(fifo_path,O_RDONLY | O_NONBLOCK);
+
+	if(fifo_fd == -1){
+		printf("Error opening file\n");
+		exit(4);
+	}
+
+	//Read the request
+	//Each vehicle the generator creates will have the following info
+	// - entrance
+	// - parking time (in clock ticks)
+	// - vehicle identifier
+	// - name of its private fifo
+	
+	int curr_entrance, curr_park_time, curr_id;
+	char *fifo_name, buff[MAX_FIFONAME_SIZE];	
+
+	//TODO get this in a cycle
+	int i = 0;
+	while(i < 100000){
+	read(fifo_fd,&curr_entrance,sizeof(int));
+	read(fifo_fd,&curr_park_time,sizeof(int));
+	read(fifo_fd,&curr_id,sizeof(int));
+	read(fifo_fd,buff,MAX_FIFONAME_SIZE);
+
+	printf("This is the %d entrance:\n\nentrance requested: %d\nparking time: %d\nvehicle id: %d\nfifo name: %s\n",
+			side,curr_entrance,curr_park_time,curr_id,fifo_name);
+
+	i++;
 	}
 
 	if(unlink(fifo_path) != 0){
