@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "vehicle.h"
+#include <errno.h>
 
 #define NUM_CONTROLLERS 4
 
@@ -71,10 +72,10 @@ int main(int argc, char *argv[]){
 	sleep(time_open);
 	int fd_N, fd_E, fd_O, fd_S;
 
-	fd_N = open("fifoN",O_WRONLY | O_NONBLOCK);
-	fd_E = open("fifoE",O_WRONLY | O_NONBLOCK);
-	fd_O = open("fifoO",O_WRONLY | O_NONBLOCK);
-	fd_S = open("fifoS",O_WRONLY | O_NONBLOCK);
+	fd_N = open("fifoN",O_WRONLY);// | O_NONBLOCK);
+	fd_E = open("fifoE",O_WRONLY);// | O_NONBLOCK);
+	fd_O = open("fifoO",O_WRONLY);// | O_NONBLOCK);
+	fd_S = open("fifoS",O_WRONLY);// | O_NONBLOCK);
 	
 	if(fd_N == -1 || fd_E == -1 || fd_O == -1 || fd_S == -1){
 		printf("main() :: error opening controller fifo\n");
@@ -82,22 +83,36 @@ int main(int argc, char *argv[]){
 
 
 	int sv = SV_IDENTIFIER;
-	write(fd_N, &sv, sizeof(int));
-	write(fd_E, &sv, sizeof(int));
-	write(fd_O, &sv, sizeof(int));
-	write(fd_S, &sv, sizeof(int));
+
+	if(write(fd_N, &sv, sizeof(int)) == -1)
+		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+
+	if(write(fd_E, &sv, sizeof(int)) == -1)
+		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+
+	if(write(fd_O, &sv, sizeof(int)) == -1)
+		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+
+	if(write(fd_S, &sv, sizeof(int)) == -1)
+		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+
+
+	printf("\tJoining threads\n");
+	for(i = 0; i < 4; i++){
+		if(pthread_join(controllers[i],NULL) != 0){ 
+			printf("\tmain() :: error joining controller threads\n");
+		}
+		printf("\tmain() :: thread %d joined\n",i);
+	}
 	
+
+	printf("\tClosing fifos\n");
 	close(fd_N);
 	close(fd_E);
 	close(fd_O);
 	close(fd_S);
 
-	for(i = 0; i < 4; i++){
-		if(pthread_join(controllers[i],NULL) != 0){ 
-			printf("\tmain() :: error joining controller threads\n");
-		}
-	}
-
+	printf("\tunlinking fifos\n");
 	unlink("fifoN");
 	unlink("fifoS");
 	unlink("fifoE");
@@ -192,7 +207,6 @@ void *controller_func(void *arg){
 	int curr_entrance, curr_park_time, curr_id = 0;
 	char buff[MAX_FIFONAME_SIZE];	
 
-	//TODO get this in a cycle
 	int x;
 	while(curr_id  != SV_IDENTIFIER) {
 		x = read(fifo_fd,&curr_id,sizeof(int));
@@ -209,16 +223,17 @@ void *controller_func(void *arg){
 		if(x > 0 && curr_id != SV_IDENTIFIER)
 			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
 				side,curr_id, curr_park_time, curr_entrance,buff);
+		printf("\tid - %d still here\n",curr_id);
 	}
 
 	printf("Closing park..\n");
 	//park now closed, handle all remaining requests
-	
-	while(read(fifo_fd, &curr_id,sizeof(int)) != 0){
+/*	
+	while(read(fifo_fd, &curr_id,sizeof(int)) > 0){
+		printf("here\n");
 	}
-
+*/
 	printf("Closing fifos\n");
-	close(fifo_fd);
 
 	printf("\tExiting controller thread\n");
 	pthread_exit(NULL);

@@ -189,11 +189,12 @@ int main(int argc, char* argv[]) {
 	
 	start_generator(generation_time, update_rate);
 
-	printf("closing mutexes and destroying fifos\n");
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_destroy(&mutexes[i]);
 		close(fifos[i]);
 	}
+
+	printf("Exiting generator main\n");
 
 	return 0;
 }
