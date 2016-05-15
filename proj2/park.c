@@ -17,7 +17,7 @@
 #define NUM_CONTROLLERS 4
 
 #define FIFO_PATH_LENGTH 8
-#define FIFO_MODE 0777
+#define FIFO_MODE 0666
 #define MAX_FIFONAME_SIZE 31
 
 #define SV_IDENTIFIER -1
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
 		print_usage();
 		return 1;
 	}
-
+	
 	int n_spaces, time_open, n_vacant;
 
 	n_spaces = atoi(argv[1]);
@@ -66,22 +66,21 @@ int main(int argc, char *argv[]){
 			return 3;
 		}
 	}
-	
+
 	//wait for time and send SV
 	sleep(time_open);
-
-
 	int fd_N, fd_E, fd_O, fd_S;
 
-	fd_N = open("fifoN",O_WRONLY | O_NONBLOCK);
-	fd_E = open("fifoE",O_WRONLY | O_NONBLOCK);
-	fd_O = open("fifoO",O_WRONLY | O_NONBLOCK);
-	fd_S = open("fifoS",O_WRONLY | O_NONBLOCK);
+	fd_N = open("fifoN",O_WRONLY);
+	fd_E = open("fifoE",O_WRONLY);
+	fd_O = open("fifoO",O_WRONLY);
+	fd_S = open("fifoS",O_WRONLY);
 	
 	if(fd_N == -1 || fd_E == -1 || fd_O == -1 || fd_S == -1){
 		printf("main() :: error opening controller fifo");
 		return 4;
 	}
+
 
 	int sv = SV_IDENTIFIER;
 	write(fd_N, &sv, sizeof(int));
@@ -89,12 +88,24 @@ int main(int argc, char *argv[]){
 	write(fd_O, &sv, sizeof(int));
 	write(fd_S, &sv, sizeof(int));
 	
+	close(fd_N);
+	close(fd_E);
+	close(fd_O);
+	close(fd_S);
+
+	unlink("fifoN");
+	unlink("fifoS");
+	unlink("fifoE");
+	unlink("fifoO");
+
 	for(i = 0; i < 4; i++){
 		if(pthread_join(controllers[i],NULL) != 0){ 
 			printf("\tmain() :: error joining controller threads\n");
 			return 4;
 		}
 	}
+
+	printf("Exiting main...\n");
 
 	return 0;
 }
@@ -124,38 +135,37 @@ void *controller_func(void *arg){
 	//Creating FIFO
 	direction_t side = (*(int *) arg);
 	char fifo_path[FIFO_PATH_LENGTH];
-	int closed = 0;
 
 	switch (side){
 		case NORTH:
 			strcpy(fifo_path,"fifoN");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO\n");
-				exit(4);
+				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
+				//exit(4);
 			}
 			break;
 
 		case WEST:
 			strcpy(fifo_path,"fifoO");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO\n");
-				exit(4);
+				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
+				//exit(4);
 			}
 			break;
 
 		case SOUTH:
 			strcpy(fifo_path,"fifoS");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO\n");
-				exit(4);
+				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
+				//exit(4);
 			}
 			break;
 
 		case EAST:
 			strcpy(fifo_path,"fifoE");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO\n");
-				exit(4);
+				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
+				//exit(4);
 			}
 			break;
 
@@ -181,41 +191,40 @@ void *controller_func(void *arg){
 	// - entrance
 	// - name of its private fifo
 	
-	int curr_entrance, curr_park_time, curr_id;
+	int curr_entrance, curr_park_time, curr_id = 0;
 	char *fifo_name, buff[MAX_FIFONAME_SIZE];	
 
 	//TODO get this in a cycle
-	while(!closed){
-		int x;
+	int x;
+	while(curr_id  != SV_IDENTIFIER) {
 		x = read(fifo_fd,&curr_id,sizeof(int));
 
-		if(curr_id == SV_IDENTIFIER){
+		/*if(curr_id == SV_IDENTIFIER){
 			printf("Closing park..\n");
 			closed = 1;
-		}
+		}*/
 
 		read(fifo_fd,&curr_park_time,sizeof(int));
 		read(fifo_fd,&curr_entrance,sizeof(int));
 		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
 
-		if(x != -1)
+		if(x > 0 && curr_id != SV_IDENTIFIER)
 			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
 				side,curr_id, curr_park_time, curr_entrance,buff);
 	}
 
+	printf("Closing park..\n");
 	//park now closed, handle all remaining requests
 	
-	while(read(fifo_fd, &curr_id,sizeof(int)) != -1){
-
-		read(fifo_fd,&curr_park_time,sizeof(int));
-		read(fifo_fd,&curr_entrance,sizeof(int));
-		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
+	while(read(fifo_fd, &curr_id,sizeof(int)) != 0){
 	}
 
+	printf("Closing fifos\n");
+	close(fifo_fd);
 
 	if(unlink(fifo_path) != 0){
 		printf("\tcontroller_func() :: failed unlinking FIFO\n");
-		exit(4);
 	}
-	return NULL;
+
+	pthread_exit(NULL);
 }
