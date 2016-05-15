@@ -17,7 +17,7 @@
 #define NUM_CONTROLLERS 4
 
 #define FIFO_PATH_LENGTH 8
-#define FIFO_MODE 0777
+#define FIFO_MODE 0666
 #define MAX_FIFONAME_SIZE 31
 
 #define SV_IDENTIFIER -1
@@ -42,11 +42,6 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	
-	mkfifo("fifoN", FIFO_MODE);
-	mkfifo("fifoS", FIFO_MODE);
-	mkfifo("fifoE", FIFO_MODE);
-	mkfifo("fifoO", FIFO_MODE);
-
 	int n_spaces, time_open, n_vacant;
 
 	n_spaces = atoi(argv[1]);
@@ -72,6 +67,8 @@ int main(int argc, char *argv[]){
 		}
 	}
 
+	//wait for time and send SV
+	sleep(time_open);
 	int fd_N, fd_E, fd_O, fd_S;
 
 	fd_N = open("fifoN",O_WRONLY);
@@ -84,8 +81,6 @@ int main(int argc, char *argv[]){
 		return 4;
 	}
 
-	//wait for time and send SV
-	sleep(time_open);
 
 	int sv = SV_IDENTIFIER;
 	write(fd_N, &sv, sizeof(int));
@@ -140,13 +135,12 @@ void *controller_func(void *arg){
 	//Creating FIFO
 	direction_t side = (*(int *) arg);
 	char fifo_path[FIFO_PATH_LENGTH];
-	int closed = 0;
 
 	switch (side){
 		case NORTH:
 			strcpy(fifo_path,"fifoN");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO\n");
+				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
 				//exit(4);
 			}
 			break;
@@ -154,7 +148,7 @@ void *controller_func(void *arg){
 		case WEST:
 			strcpy(fifo_path,"fifoO");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO\n");
+				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
 				//exit(4);
 			}
 			break;
@@ -162,7 +156,7 @@ void *controller_func(void *arg){
 		case SOUTH:
 			strcpy(fifo_path,"fifoS");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO\n");
+				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
 				//exit(4);
 			}
 			break;
@@ -170,7 +164,7 @@ void *controller_func(void *arg){
 		case EAST:
 			strcpy(fifo_path,"fifoE");
 			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO\n");
+				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
 				//exit(4);
 			}
 			break;
@@ -197,13 +191,12 @@ void *controller_func(void *arg){
 	// - entrance
 	// - name of its private fifo
 	
-	int curr_entrance, curr_park_time, curr_id;
+	int curr_entrance, curr_park_time, curr_id = 0;
 	char *fifo_name, buff[MAX_FIFONAME_SIZE];	
-	curr_id = -1;
 
 	//TODO get this in a cycle
+	int x;
 	while(curr_id  != SV_IDENTIFIER) {
-		int x;
 		x = read(fifo_fd,&curr_id,sizeof(int));
 
 		/*if(curr_id == SV_IDENTIFIER){
@@ -215,10 +208,9 @@ void *controller_func(void *arg){
 		read(fifo_fd,&curr_entrance,sizeof(int));
 		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
 
-		if(curr_id != SV_IDENTIFIER)
+		if(x > 0 && curr_id != SV_IDENTIFIER)
 			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
 				side,curr_id, curr_park_time, curr_entrance,buff);
-		else printf("invalid\n");
 	}
 
 	printf("Closing park..\n");
@@ -232,7 +224,6 @@ void *controller_func(void *arg){
 
 	if(unlink(fifo_path) != 0){
 		printf("\tcontroller_func() :: failed unlinking FIFO\n");
-		exit(4);
 	}
 
 	pthread_exit(NULL);

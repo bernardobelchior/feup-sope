@@ -92,6 +92,7 @@ void* vehicle_thread(void* arg) {
 void alarm_fired(int signo) {
 	if(signo == SIGALRM)
 		generate_vehicles = 0;
+	printf("Alarm Fired!!\n");
 }
 
 /**
