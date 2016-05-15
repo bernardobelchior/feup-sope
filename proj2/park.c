@@ -71,14 +71,13 @@ int main(int argc, char *argv[]){
 	sleep(time_open);
 	int fd_N, fd_E, fd_O, fd_S;
 
-	fd_N = open("fifoN",O_WRONLY);
-	fd_E = open("fifoE",O_WRONLY);
-	fd_O = open("fifoO",O_WRONLY);
-	fd_S = open("fifoS",O_WRONLY);
+	fd_N = open("fifoN",O_WRONLY | O_NONBLOCK);
+	fd_E = open("fifoE",O_WRONLY | O_NONBLOCK);
+	fd_O = open("fifoO",O_WRONLY | O_NONBLOCK);
+	fd_S = open("fifoS",O_WRONLY | O_NONBLOCK);
 	
 	if(fd_N == -1 || fd_E == -1 || fd_O == -1 || fd_S == -1){
-		printf("main() :: error opening controller fifo");
-		return 4;
+		printf("main() :: error opening controller fifo\n");
 	}
 
 
@@ -93,17 +92,17 @@ int main(int argc, char *argv[]){
 	close(fd_O);
 	close(fd_S);
 
+	for(i = 0; i < 4; i++){
+		if(pthread_join(controllers[i],NULL) != 0){ 
+			printf("\tmain() :: error joining controller threads\n");
+		}
+	}
+
 	unlink("fifoN");
 	unlink("fifoS");
 	unlink("fifoE");
 	unlink("fifoO");
 
-	for(i = 0; i < 4; i++){
-		if(pthread_join(controllers[i],NULL) != 0){ 
-			printf("\tmain() :: error joining controller threads\n");
-			return 4;
-		}
-	}
 
 	printf("Exiting main...\n");
 
@@ -177,11 +176,10 @@ void *controller_func(void *arg){
 	
 	//opening the fifo for reading
 	int fifo_fd;
-	fifo_fd = open(fifo_path,O_RDONLY );//| O_NONBLOCK);
+	fifo_fd = open(fifo_path,O_RDONLY);// | O_NONBLOCK);
 
 	if(fifo_fd == -1){
-		printf("Error opening file\n");
-		exit(4);
+		printf("\tError opening file\n");
 	}
 
 	//Read the request
@@ -192,7 +190,7 @@ void *controller_func(void *arg){
 	// - name of its private fifo
 	
 	int curr_entrance, curr_park_time, curr_id = 0;
-	char *fifo_name, buff[MAX_FIFONAME_SIZE];	
+	char buff[MAX_FIFONAME_SIZE];	
 
 	//TODO get this in a cycle
 	int x;
@@ -222,9 +220,6 @@ void *controller_func(void *arg){
 	printf("Closing fifos\n");
 	close(fifo_fd);
 
-	if(unlink(fifo_path) != 0){
-		printf("\tcontroller_func() :: failed unlinking FIFO\n");
-	}
-
+	printf("\tExiting controller thread\n");
 	pthread_exit(NULL);
 }

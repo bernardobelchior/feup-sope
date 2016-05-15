@@ -15,7 +15,7 @@
 #include <string.h>
 #include "vehicle.h"
 
-#define FIFO_MODE 0777
+#define FIFO_MODE 0666
 
 int generate_vehicles = 1;
 FILE* logger; 
@@ -83,7 +83,7 @@ void* vehicle_thread(void* arg) {
 
 	send_vehicle(vehicle);
 
-	return NULL;
+	pthread_exit(NULL);
 }
 
 /**
@@ -175,10 +175,6 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, "Could not set up signal handler for SIGALRM.\n");
 	}
 
-	mkfifo("fifoN", FIFO_MODE);
-	mkfifo("fifoS", FIFO_MODE);
-	mkfifo("fifoE", FIFO_MODE);
-	mkfifo("fifoO", FIFO_MODE);
 	fifos[0] = open("fifoN", O_WRONLY);
 	fifos[1] = open("fifoS", O_WRONLY);
 	fifos[2] = open("fifoE", O_WRONLY);
@@ -193,6 +189,7 @@ int main(int argc, char* argv[]) {
 	
 	start_generator(generation_time, update_rate);
 
+	printf("closing mutexes and destroying fifos\n");
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_destroy(&mutexes[i]);
 		close(fifos[i]);
