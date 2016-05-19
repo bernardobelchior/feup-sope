@@ -54,6 +54,21 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 
+	if(mkfifo("fifoN",FIFO_MODE) != 0){
+		printf("Failed making fifoN\n");
+	}
+
+	if(mkfifo("fifoE",FIFO_MODE) != 0){
+		printf("Failed making fifoE\n");
+	}
+
+	if(mkfifo("fifoO",FIFO_MODE) != 0){
+		printf("Failed making fifoO\n");
+	}
+
+	if(mkfifo("fifoS",FIFO_MODE) != 0){
+		printf("Failed making fifoS\n");
+	}
 	//creating the 4 "controller" threads
 	pthread_t controllers[4];
 
@@ -68,20 +83,33 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-	//wait for time and send SV
-	sleep(time_open);
 	int fd_N, fd_E, fd_O, fd_S;
 
-	fd_N = open("fifoN",O_WRONLY);// | O_NONBLOCK);
-	fd_E = open("fifoE",O_WRONLY);// | O_NONBLOCK);
-	fd_O = open("fifoO",O_WRONLY);// | O_NONBLOCK);
-	fd_S = open("fifoS",O_WRONLY);// | O_NONBLOCK);
-	
-	if(fd_N == -1 || fd_E == -1 || fd_O == -1 || fd_S == -1){
-		printf("main() :: error opening controller fifo\n");
+	fd_N = open("fifoN",O_WRONLY);
+	if(fd_N == -1){
+		printf("Error opening fifoN\n");
 	}
 
+	fd_E = open("fifoE",O_WRONLY);
+	if(fd_E == -1){
+		printf("Error opening fifoE\n");
+	}
 
+	fd_O = open("fifoO",O_WRONLY);
+	if(fd_O == -1){
+		printf("Error opening fifoO\n");
+	}
+
+	fd_S = open("fifoS",O_WRONLY);
+	if(fd_N == -1){
+		printf("Error opening fifoS\n");
+	}
+	
+	//wait for time and send SV
+	sleep(time_open);
+
+
+	//sending stop vehicle
 	int sv = SV_IDENTIFIER;
 
 	if(write(fd_N, &sv, sizeof(int)) == -1)
@@ -153,34 +181,34 @@ void *controller_func(void *arg){
 	switch (side){
 		case NORTH:
 			strcpy(fifo_path,"fifoN");
-			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
-				//exit(4);
-			}
+			/*if(mkfifo(fifo_path,FIFO_MODE) != 0){*/
+				/*printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);*/
+				/*exit(4);*/
+			/*}*/
 			break;
 
 		case WEST:
 			strcpy(fifo_path,"fifoO");
-			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
-				//exit(4);
-			}
+			/*if(mkfifo(fifo_path,FIFO_MODE) != 0){*/
+				/*printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);*/
+				/*exit(4);*/
+			/*}*/
 			break;
 
 		case SOUTH:
 			strcpy(fifo_path,"fifoS");
-			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
-				//exit(4);
-			}
+			/*if(mkfifo(fifo_path,FIFO_MODE) != 0){*/
+				/*printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);*/
+				/*exit(4);*/
+			/*}*/
 			break;
 
 		case EAST:
 			strcpy(fifo_path,"fifoE");
-			if(mkfifo(fifo_path,FIFO_MODE) != 0){
-				printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);
-				//exit(4);
-			}
+			/*if(mkfifo(fifo_path,FIFO_MODE) != 0){*/
+				/*printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);*/
+				/*exit(4);*/
+			/*}*/
 			break;
 
 		default:
@@ -191,7 +219,7 @@ void *controller_func(void *arg){
 	
 	//opening the fifo for reading
 	int fifo_fd;
-	fifo_fd = open(fifo_path,O_RDONLY);// | O_NONBLOCK);
+	fifo_fd = open(fifo_path,O_RDONLY);
 
 	if(fifo_fd == -1){
 		printf("\tError opening file\n");
@@ -211,10 +239,10 @@ void *controller_func(void *arg){
 	while(curr_id  != SV_IDENTIFIER) {
 		x = read(fifo_fd,&curr_id,sizeof(int));
 
-		/*if(curr_id == SV_IDENTIFIER){
+		if(curr_id == SV_IDENTIFIER){
 			printf("Closing park..\n");
-			closed = 1;
-		}*/
+			break;
+		}
 
 		read(fifo_fd,&curr_park_time,sizeof(int));
 		read(fifo_fd,&curr_entrance,sizeof(int));
