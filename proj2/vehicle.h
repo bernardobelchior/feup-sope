@@ -6,6 +6,8 @@
 
 typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
 
+const char* direction_names[4] = { "North", "South", "East", "West"};
+
 typedef struct {
 	int id;
 	int parking_time;

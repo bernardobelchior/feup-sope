@@ -16,6 +16,7 @@
 #include "vehicle.h"
 
 #define FIFO_MODE 0666
+#define FIFO_NOT_CREATED 11
 
 int generate_vehicles = 1;
 FILE* logger; 
@@ -183,8 +184,10 @@ int main(int argc, char* argv[]) {
 	int i;
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_init(&mutexes[i], NULL);
-		if(fifos[i] == -1)
-			fprintf(stderr, "The fifo %d could not be open.\n", i);
+		if(fifos[i] == -1) {
+			fprintf(stderr, "The fifo %s could not be open.\nExiting...\n", direction_names[i]);
+			exit(FIFO_NOT_CREATED);
+		}
 	}
 	
 	start_generator(generation_time, update_rate);
