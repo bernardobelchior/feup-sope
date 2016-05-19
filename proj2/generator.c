@@ -49,7 +49,6 @@ int vehicle_changed_state(vehicle_t *vehicle, int lifetime, vehicle_status_t v_s
 void send_vehicle(vehicle_t* vehicle) {
 	int ticks_start = ticks;
 
-	vehicle->fifo_name = (char*) malloc(10*sizeof(char));
 	sprintf(vehicle->fifo_name, "vehicle%d", vehicle->id);
 
 	pthread_mutex_lock(&mutexes[vehicle->direction]);

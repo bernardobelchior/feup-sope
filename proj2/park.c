@@ -19,13 +19,12 @@
 
 #define FIFO_PATH_LENGTH 8
 #define FIFO_MODE 0666
-#define MAX_FIFONAME_SIZE 31
 
 #define SV_IDENTIFIER -1
 
 void print_usage();
 void *controller_func (void *arg);
-void *worker_func (void *arg);
+void *assistant_func (void *arg);
 
 /**
  * main thread:
@@ -181,34 +180,18 @@ void *controller_func(void *arg){
 	switch (side){
 		case NORTH:
 			strcpy(fifo_path,"fifoN");
-			/*if(mkfifo(fifo_path,FIFO_MODE) != 0){*/
-				/*printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);*/
-				/*exit(4);*/
-			/*}*/
 			break;
 
 		case WEST:
 			strcpy(fifo_path,"fifoO");
-			/*if(mkfifo(fifo_path,FIFO_MODE) != 0){*/
-				/*printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);*/
-				/*exit(4);*/
-			/*}*/
 			break;
 
 		case SOUTH:
 			strcpy(fifo_path,"fifoS");
-			/*if(mkfifo(fifo_path,FIFO_MODE) != 0){*/
-				/*printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);*/
-				/*exit(4);*/
-			/*}*/
 			break;
 
 		case EAST:
 			strcpy(fifo_path,"fifoE");
-			/*if(mkfifo(fifo_path,FIFO_MODE) != 0){*/
-				/*printf("\tcontroller_func() :: failed making FIFO %s\n",fifo_path);*/
-				/*exit(4);*/
-			/*}*/
 			break;
 
 		default:
@@ -233,7 +216,7 @@ void *controller_func(void *arg){
 	// - name of its private fifo
 	
 	int curr_entrance, curr_park_time, curr_id = 0;
-	char buff[MAX_FIFONAME_SIZE];	
+	char curr_fifoname[MAX_FIFONAME_SIZE];	
 
 	int x;
 	while(curr_id  != SV_IDENTIFIER) {
@@ -246,23 +229,55 @@ void *controller_func(void *arg){
 
 		read(fifo_fd,&curr_park_time,sizeof(int));
 		read(fifo_fd,&curr_entrance,sizeof(int));
-		read(fifo_fd,buff,MAX_FIFONAME_SIZE);
+		read(fifo_fd,curr_fifoname,MAX_FIFONAME_SIZE);
 
 		if(x > 0 && curr_id != SV_IDENTIFIER)
 			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
-				side,curr_id, curr_park_time, curr_entrance,buff);
-		printf("\tid - %d still here\n",curr_id);
+				side,curr_id, curr_park_time, curr_entrance,curr_fifoname);
+
+		
+		pthread_t assistant_tid;
+		vehicle_t vehicle;
+
+		vehicle.id = curr_id;
+		vehicle.parking_time = curr_park_time;
+		vehicle.direction = curr_entrance;
+		strcpy(vehicle.fifo_name,curr_fifoname);
+
+		pthread_create(&assistant_tid,NULL,assistant_func,&vehicle);
+		pthread_detach(assistant_tid);
 	}
 
 	printf("Closing park..\n");
 	//park now closed, handle all remaining requests
-/*	
+	
 	while(read(fifo_fd, &curr_id,sizeof(int)) > 0){
 		printf("here\n");
 	}
-*/
+
 	printf("Closing fifos\n");
 
 	printf("\tExiting controller thread\n");
+	pthread_exit(NULL);
+}
+
+/**
+ * vehicle assistant function, should:
+ * 	get information about the vehicle
+ * 	check if there is a parking spot for the vehicle
+ * 		if there is, make a reservation and send a confirmation message through the private vehicle fifo
+ * 		if there is not, send a failure message through the private vehicle fifo
+ * 	if a vehicle enters the park sucessfully, control the time it stays and send an exit message through the fifo afterwards
+ * 	after the exit, update the number of available spots
+ */
+void *assistant_func(void *arg){
+	
+	//get vehicle info
+	int id = (*(vehicle_t *)arg).id;	
+	int park_time = (*(vehicle_t *)arg).parking_time;	
+	char fifo_name[MAX_FIFONAME_SIZE];
+
+	strcpy(fifo_name, (*(vehicle_t *)arg).fifo_name);
+
 	pthread_exit(NULL);
 }
