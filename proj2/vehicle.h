@@ -5,6 +5,7 @@
  */
 
 #define MAX_FIFONAME_SIZE 64
+
 typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
 
 const char* direction_names[4] = { "North", "South", "East", "West"};
