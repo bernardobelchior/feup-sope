@@ -25,6 +25,9 @@ void print_usage();
 void *controller_func (void *arg);
 void *assistant_func (void *arg);
 
+pthread_mutex_t park_mutex;
+int n_vacant, closed;
+
 /**
  * main thread:
  * 
@@ -41,11 +44,15 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	
-	int n_spaces, time_open, n_vacant;
+	int n_spaces, time_open;
 
 	n_spaces = atoi(argv[1]);
 	time_open = atoi(argv[2]);
 	n_vacant = n_spaces;
+	closed = 0;
+
+	if(pthread_mutex_init(&park_mutex,NULL) != 0)
+		fprintf(stderr,"park.c :: main() :: Failed to create park mutex!\n");
 
 	if(n_spaces < 0 || time_open < 0){
 		print_usage();
@@ -67,6 +74,7 @@ int main(int argc, char *argv[]){
 	if(mkfifo("fifoS",FIFO_MODE) != 0){
 		printf("Failed making fifoS\n");
 	}
+	
 	//creating the 4 "controller" threads
 	pthread_t controllers[4];
 
@@ -144,7 +152,6 @@ int main(int argc, char *argv[]){
 	unlink("fifoE");
 	unlink("fifoO");
 
-
 	printf("Exiting main...\n");
 
 	return 0;
@@ -169,7 +176,7 @@ void print_usage(){
  */
 void *controller_func(void *arg){
 
-	//TODO create valet threads and react to the closure of the park
+	//TODO create valet threads 
 	
 
 	//Creating FIFO
@@ -197,8 +204,6 @@ void *controller_func(void *arg){
 			break; //not expected
 	}
 
-	//TODO read requests
-	
 	//opening the fifo for reading
 	int fifo_fd;
 	fifo_fd = open(fifo_path,O_RDONLY);
@@ -222,6 +227,7 @@ void *controller_func(void *arg){
 		x = read(fifo_fd,&curr_id,sizeof(int));
 
 		if(curr_id == SV_IDENTIFIER){
+			closed = 1;
 			printf("Closing park..\n");
 			break;
 		}
@@ -248,10 +254,23 @@ void *controller_func(void *arg){
 	}
 
 	printf("Closing park..\n");
-	//park now closed, handle all remaining requests
 	
+	//park now closed, handle all remaining requests
 	while(read(fifo_fd, &curr_id,sizeof(int)) > 0){
-		printf("here\n");
+		read(fifo_fd,&curr_park_time,sizeof(int));
+		read(fifo_fd,&curr_entrance,sizeof(int));
+		read(fifo_fd,curr_fifoname,MAX_FIFONAME_SIZE);
+		
+		pthread_t assistant_tid;
+		vehicle_t vehicle;
+
+		vehicle.id = curr_id;
+		vehicle.parking_time = curr_park_time;
+		vehicle.direction = curr_entrance;
+		strcpy(vehicle.fifo_name,curr_fifoname);
+
+		pthread_create(&assistant_tid,NULL,assistant_func,&vehicle);
+		pthread_detach(assistant_tid);
 	}
 
 	printf("Closing fifos\n");
@@ -272,17 +291,48 @@ void *controller_func(void *arg){
 void *assistant_func(void *arg){
 	
 	//get vehicle info
-	int id = (*(vehicle_t *)arg).id;	
 	int park_time = (*(vehicle_t *)arg).parking_time;	
 	char fifo_name[MAX_FIFONAME_SIZE];
+	int fifo_fd;
+	vehicle_status_t status;
 
 	strcpy(fifo_name, (*(vehicle_t *)arg).fifo_name);
 
-	if(open(fifo_name, O_WRONLY) == -1){
+	fifo_fd = open(fifo_name, O_WRONLY);
+	if( fifo_fd == -1){
 		fprintf(stderr,"The fifo %s could not be opened.\n",fifo_name);
 	}
 
 	//check for vacant parking spots
+	
+	pthread_mutex_lock(&park_mutex);
+	if(closed){
+		status = PARK_CLOSED;
+		write(fifo_fd,&status,sizeof(vehicle_status_t));
+		close(fifo_fd);
+		pthread_exit(NULL);
+	}
+	else if(n_vacant == 0){ //no parking spots available, sends a message and exits
+		status = PARK_FULL;
+		write(fifo_fd,&status,sizeof(vehicle_status_t));
+		close(fifo_fd);
+		pthread_exit(NULL);
+	}
+
+	else { //there are spots available
+		n_vacant--;
+		status = ENTERED;
+		write(fifo_fd,&status,sizeof(vehicle_status_t));
+	}
+	pthread_mutex_unlock(&park_mutex);
+
+	sleep(park_time);
+
+	//removes the vehicle from the park and sends the appropriate message
+	n_vacant++;
+	status = EXITED; 
+	write(fifo_fd,&status,sizeof(vehicle_status_t));
+	close(fifo_fd);
 
 	pthread_exit(NULL);
 }
