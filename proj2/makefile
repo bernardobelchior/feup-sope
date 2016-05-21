@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -lpthread
+CFLAGS = -Wall -lpthread -pthread
 TARGET = parque
 MKDIR = mkdir -p
 

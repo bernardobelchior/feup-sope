@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <semaphore.h>
 #include "vehicle.h"
 #include <errno.h>
 
@@ -114,7 +115,13 @@ int main(int argc, char *argv[]){
 	//wait for time and send SV
 	sleep(time_open);
 
-
+	sem_t *semaphore = sem_open(semaphore_name, O_CREAT, FIFO_MODE, 1);
+	if(semaphore == SEM_FAILED) {
+		fprintf(stderr, "Semaphore failed to be created.\nExiting program...");
+	   exit(SEMAPHORE_CREATION_FAILED);
+	}
+	     
+	sem_wait(semaphore);
 	//sending stop vehicle
 	int sv = SV_IDENTIFIER;
 
@@ -129,6 +136,9 @@ int main(int argc, char *argv[]){
 
 	if(write(fd_S, &sv, sizeof(int)) == -1)
 		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+	sem_post(semaphore);
+	sem_close(semaphore);
+	sem_unlink(semaphore_name);
 
 
 	printf("\tJoining threads\n");

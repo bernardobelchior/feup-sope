@@ -72,7 +72,12 @@ void* vehicle_thread(void* arg) {
 
 	sprintf(vehicle->fifo_name, "vehicle%d", vehicle->id);
 
-	sem_t* semaphore = sem_open("semaphore", 0);
+	sem_t* semaphore = sem_open(semaphore_name, O_CREAT, FIFO_MODE, 1);
+	if(semaphore == SEM_FAILED) {
+		fprintf(stderr, "Semaphore failed to be created.\nExiting program...");
+		exit(SEMAPHORE_CREATION_FAILED);
+	}
+
 	sem_wait(semaphore);
 	pthread_mutex_lock(&mutexes[vehicle->direction]);
 	write(entrance_fd, &(vehicle->id), sizeof(int));

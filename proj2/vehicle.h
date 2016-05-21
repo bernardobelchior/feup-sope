@@ -5,6 +5,7 @@
  */
 
 #define MAX_FIFONAME_SIZE 64
+#define SEMAPHORE_CREATION_FAILED 4
 
 typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
 
@@ -20,3 +21,4 @@ typedef struct {
 typedef enum { PARK_FULL, ENTERED, EXITED, PARK_CLOSED} vehicle_status_t;
 
 const char* messages_array[4] = { "cheio!", "entrada", "saida", "encerrado" };
+const char* semaphore_name = "/semaphore";
