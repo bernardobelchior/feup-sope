@@ -22,7 +22,6 @@ int generate_vehicles = 1;
 FILE* logger; 
 int ticks;
 pthread_mutex_t mutexes[4];
-int fifos[4];
 
 /**
  * Writes the vehicle status to the log file.
@@ -47,16 +46,16 @@ int vehicle_changed_state(vehicle_t *vehicle, int lifetime, vehicle_status_t v_s
  * Sends the vehicle to the specified fifo and
  * creates the vehicle specific fifo.
  */
-void send_vehicle(vehicle_t* vehicle) {
+void send_vehicle(vehicle_t* vehicle, int fifo_fd) {
 	int ticks_start = ticks;
 
 	sprintf(vehicle->fifo_name, "vehicle%d", vehicle->id);
 
 	pthread_mutex_lock(&mutexes[vehicle->direction]);
-	write(fifos[vehicle->direction], &(vehicle->id), sizeof(int));
-	write(fifos[vehicle->direction], &(vehicle->parking_time), sizeof(int));
-	write(fifos[vehicle->direction], &(vehicle->direction), sizeof(direction_t));
-	write(fifos[vehicle->direction], vehicle->fifo_name, (strlen(vehicle->fifo_name)+1)*sizeof(char));
+	write(fifo_fd, &(vehicle->id), sizeof(int));
+	write(fifo_fd, &(vehicle->parking_time), sizeof(int));
+	write(fifo_fd, &(vehicle->direction), sizeof(direction_t));
+	write(fifo_fd, vehicle->fifo_name, (strlen(vehicle->fifo_name)+1)*sizeof(char));
 	pthread_mutex_unlock(&mutexes[vehicle->direction]);
 
 	vehicle_status_t status = -1;
@@ -79,9 +78,45 @@ void send_vehicle(vehicle_t* vehicle) {
  * Handles the thread for every vehicle
  */
 void* vehicle_thread(void* arg) {
+
 	vehicle_t* vehicle = (vehicle_t*) arg;
 
-	send_vehicle(vehicle);
+	direction_t side = (*(vehicle_t*)arg).direction;
+	char entrance_fifo[MAX_FIFONAME_SIZE];
+	int entrance_fd;
+
+	switch(side){
+		
+		case NORTH:
+			strcpy(entrance_fifo,"fifoN");
+			break;
+
+		case EAST:
+			strcpy(entrance_fifo, "fifoE");
+			break;
+
+		case WEST:
+			strcpy(entrance_fifo, "fifoO");
+			break;
+
+		case SOUTH:
+			strcpy(entrance_fifo,"fifoS");
+			break;
+
+		default:
+			break; //not expecter
+
+	}
+
+	entrance_fd = open(entrance_fifo,O_WRONLY | O_NONBLOCK);
+
+	if(entrance_fd == -1){
+		fprintf(stderr,"Could not open fifo %s\n", entrance_fifo);
+		pthread_exit(NULL);
+		
+	}
+
+	send_vehicle(vehicle,entrance_fd);
 
 	pthread_exit(NULL);
 }
@@ -175,25 +210,15 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, "Could not set up signal handler for SIGALRM.\n");
 	}
 
-	fifos[0] = open("fifoN", O_WRONLY);
-	fifos[1] = open("fifoS", O_WRONLY);
-	fifos[2] = open("fifoE", O_WRONLY);
-	fifos[3] = open("fifoO", O_WRONLY);
-	
 	int i;
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_init(&mutexes[i], NULL);
-		if(fifos[i] == -1) {
-			fprintf(stderr, "The fifo %s could not be open.\nExiting...\n", direction_names[i]);
-			exit(FIFO_NOT_CREATED);
-		}
 	}
 	
 	start_generator(generation_time, update_rate);
 
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_destroy(&mutexes[i]);
-		close(fifos[i]);
 	}
 
 	printf("Exiting generator main\n");
