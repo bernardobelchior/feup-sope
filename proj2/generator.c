@@ -27,19 +27,8 @@ pthread_mutex_t mutexes[4];
  * Writes the vehicle status to the log file.
  */
 void log_vehicle(vehicle_t *vehicle, int lifetime, vehicle_status_t v_status) {
-		fprintf(logger, "%d;%d;%d;%d;%d;%s\n", ticks, vehicle->id, vehicle->direction, vehicle->parking_time, lifetime, messages_array[v_status]);
-}
-
-/* Handles the vehicle lifetime and logs everytime its state changes.
- * 
- * Returns 1 if the vehicle needs to be maintained, returning 0 otherwise.
- */
-int vehicle_changed_state(vehicle_t *vehicle, int lifetime, vehicle_status_t v_status) {
-
 	if(logger != NULL)
-		log_vehicle(vehicle, lifetime, v_status);
-
-	return v_status == ENTERED || v_status == PARK_FULL;
+		fprintf(logger, "%d;%d;%d;%d;%d;%s\n", ticks, vehicle->id, vehicle->direction, vehicle->parking_time, lifetime, messages_array[v_status]);
 }
 
 /**
@@ -58,15 +47,22 @@ void send_vehicle(vehicle_t* vehicle, int fifo_fd) {
 	write(fifo_fd, vehicle->fifo_name, (strlen(vehicle->fifo_name)+1)*sizeof(char));
 	pthread_mutex_unlock(&mutexes[vehicle->direction]);
 
+	if(mkfifo(vehicle->fifo_name, FIFO_MODE) == -1) {
+		fprintf(stderr, "The fifo %s could not be created.\n", vehicle->fifo_name);
+		free(vehicle);
+		pthread_exit(NULL);
+	} 
+
 	vehicle_status_t status = -1;
-	int vehicle_fifo = open(vehicle->fifo_name, O_WRONLY);
+	int vehicle_fifo = open(vehicle->fifo_name, O_RDONLY);
 	
 	if(vehicle_fifo == -1) {
 		fprintf(stderr, "The fifo named %s could not be open.\n", vehicle->fifo_name);
 	} else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
-  		} while(vehicle_changed_state(vehicle, ticks-ticks_start, status)); 
+			log_vehicle(vehicle, ticks-ticks_start, status);
+  		} while(status == ENTERED); 
 
 		close(vehicle_fifo);
 	}
@@ -78,15 +74,12 @@ void send_vehicle(vehicle_t* vehicle, int fifo_fd) {
  * Handles the thread for every vehicle
  */
 void* vehicle_thread(void* arg) {
-
 	vehicle_t* vehicle = (vehicle_t*) arg;
 
-	direction_t side = (*(vehicle_t*)arg).direction;
 	char entrance_fifo[MAX_FIFONAME_SIZE];
 	int entrance_fd;
 
-	switch(side){
-		
+	switch(vehicle->direction){
 		case NORTH:
 			strcpy(entrance_fifo,"fifoN");
 			break;
@@ -104,20 +97,19 @@ void* vehicle_thread(void* arg) {
 			break;
 
 		default:
-			break; //not expecter
-
+			printf("%d", vehicle->direction);
+			break; //not expected
 	}
 
-	entrance_fd = open(entrance_fifo,O_WRONLY | O_NONBLOCK);
+	entrance_fd = open(entrance_fifo, O_WRONLY | O_NONBLOCK);
 
 	if(entrance_fd == -1){
-		fprintf(stderr,"Could not open fifo %s\n", entrance_fifo);
-		pthread_exit(NULL);
-		
+		fprintf(stderr,"Could not open fifo %s.\n", entrance_fifo);
+	} else {
+		send_vehicle(vehicle,entrance_fd);
 	}
 
-	send_vehicle(vehicle,entrance_fd);
-
+	free(vehicle);
 	pthread_exit(NULL);
 }
 
@@ -155,15 +147,15 @@ int get_ticks_to_next_vehicle() {
  */
 void generate_vehicle(int update_rate) {
 	static int nextId = 1;
-	vehicle_t vehicle;
+	vehicle_t* vehicle = (vehicle_t*) malloc(sizeof(vehicle_t));
 
-	vehicle.id = nextId;
+	vehicle->id = nextId;
 	nextId++;
-	vehicle.parking_time = (rand() % 10) + 1;
-	vehicle.direction = rand() % 4;
+	vehicle->parking_time = (rand() % 10) + 1;
+	vehicle->direction = rand() % 4;
 
 	pthread_t thread;
-	pthread_create(&thread, NULL, vehicle_thread, &vehicle);
+	pthread_create(&thread, NULL, vehicle_thread, (void *) vehicle);
 	pthread_detach(thread);
 }
 
