@@ -155,15 +155,15 @@ int get_ticks_to_next_vehicle() {
  */
 void generate_vehicle(int update_rate) {
 	static int nextId = 1;
-	vehicle_t* vehicle = (vehicle_t*) malloc(sizeof(vehicle_t));
+	vehicle_t vehicle;
 
-	vehicle->id = nextId;
+	vehicle.id = nextId;
 	nextId++;
-	vehicle->parking_time = (rand() % 10) + 1;
-	vehicle->direction = rand() % 4;
+	vehicle.parking_time = (rand() % 10) + 1;
+	vehicle.direction = rand() % 4;
 
 	pthread_t thread;
-	pthread_create(&thread, NULL, vehicle_thread, (void*) vehicle);
+	pthread_create(&thread, NULL, vehicle_thread, &vehicle);
 	pthread_detach(thread);
 }
 
