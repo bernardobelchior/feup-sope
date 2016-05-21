@@ -157,10 +157,10 @@ int main(int argc, char *argv[]){
 	close(fd_S);
 
 	printf("\tunlinking fifos\n");
-	unlink("fifoN");
-	unlink("fifoS");
-	unlink("fifoE");
-	unlink("fifoO");
+	printf("fifoN unlink %d\n",unlink("fifoN"));
+	printf("fifoS unlink %d\n",unlink("fifoS"));
+	printf("fifoE unlink %d\n",unlink("fifoE"));
+	printf("fifoO unlink %d\n",unlink("fifoO"));
 
 	printf("Exiting main...\n");
 
@@ -185,9 +185,6 @@ void print_usage(){
  * wait for closure of the park to attend any remaining requests and close the FIFO
  */
 void *controller_func(void *arg){
-
-	//TODO create valet threads 
-	
 
 	//Creating FIFO
 	direction_t side = (*(int *) arg);
@@ -315,28 +312,33 @@ void *assistant_func(void *arg){
 
 	//check for vacant parking spots
 	
+	printf("%d\n",n_vacant);
 	pthread_mutex_lock(&park_mutex);
 	if(closed){
 		status = PARK_CLOSED;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
 		close(fifo_fd);
+		unlink(fifo_name);
 		pthread_exit(NULL);
 	}
 	else if(n_vacant == 0){ //no parking spots available, sends a message and exits
 		status = PARK_FULL;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
 		close(fifo_fd);
+		unlink(fifo_name);
 		pthread_exit(NULL);
 	}
 
 	else { //there are spots available
+		printf("spots available! n_vacant = %d\n",n_vacant);
 		n_vacant--;
+		printf(" available! n_vacant = %d\n",n_vacant);
 		status = ENTERED;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
 	}
 	pthread_mutex_unlock(&park_mutex);
 
-	sleep(park_time);
+	usleep(park_time*1000);
 
 	//removes the vehicle from the park and sends the appropriate message
 	n_vacant++;
@@ -344,5 +346,6 @@ void *assistant_func(void *arg){
 	write(fifo_fd,&status,sizeof(vehicle_status_t));
 	close(fifo_fd);
 
+	unlink(fifo_name);
 	pthread_exit(NULL);
 }

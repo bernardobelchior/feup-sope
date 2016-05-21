@@ -42,6 +42,7 @@ void* vehicle_thread(void* arg) {
 	char entrance_fifo[MAX_FIFONAME_SIZE];
 	int entrance_fd;
 
+	//set the name of the entrance fifo to be opened
 	switch(vehicle->direction){
 		case NORTH:
 			strcpy(entrance_fifo,"fifoN");
@@ -88,6 +89,8 @@ void* vehicle_thread(void* arg) {
 	sem_post(semaphore);
 	sem_close(semaphore);
 
+	close(entrance_fd);
+
 	if(mkfifo(vehicle->fifo_name, FIFO_MODE) == -1) {
 		fprintf(stderr, "The fifo %s could not be created.\n", vehicle->fifo_name);
 		free(vehicle);
@@ -99,16 +102,19 @@ void* vehicle_thread(void* arg) {
 	
 	if(vehicle_fifo == -1) {
 		fprintf(stderr, "The fifo named %s could not be open.\n", vehicle->fifo_name);
-	} else {
+	}
+  
+	else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
+			printf("fifo name: %s\t status: %d\n",vehicle->fifo_name, status);
 			log_vehicle(vehicle, ticks-ticks_start, status);
   		} while(status == ENTERED); 
 
 		close(vehicle_fifo);
 	}
 
-	unlink(vehicle->fifo_name);
+	printf("Vehicle fifo %s unlink %d\n",vehicle->fifo_name,unlink(vehicle->fifo_name));
 
 	free(vehicle);
 	pthread_exit(NULL);
@@ -152,7 +158,7 @@ void generate_vehicle(int update_rate) {
 
 	vehicle->id = nextId;
 	nextId++;
-	vehicle->parking_time = (rand() % 10) + 1;
+	vehicle->parking_time = update_rate * ((rand() % 10) + 1);
 	vehicle->direction = rand() % 4;
 
 	pthread_t thread;
