@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <semaphore.h>
 #include <string.h>
 #include "vehicle.h"
 
@@ -32,20 +33,55 @@ void log_vehicle(vehicle_t *vehicle, int lifetime, vehicle_status_t v_status) {
 }
 
 /**
- * Sends the vehicle to the specified fifo and
- * creates the vehicle specific fifo.
+ * Handles the thread for every vehicle
  */
-void send_vehicle(vehicle_t* vehicle, int fifo_fd) {
+void* vehicle_thread(void* arg) {
+	vehicle_t* vehicle = (vehicle_t*) arg;
+
 	int ticks_start = ticks;
+	char entrance_fifo[MAX_FIFONAME_SIZE];
+	int entrance_fd;
+
+	switch(vehicle->direction){
+		case NORTH:
+			strcpy(entrance_fifo,"fifoN");
+			break;
+
+		case EAST:
+			strcpy(entrance_fifo, "fifoE");
+			break;
+
+		case WEST:
+			strcpy(entrance_fifo, "fifoO");
+			break;
+
+		case SOUTH:
+			strcpy(entrance_fifo,"fifoS");
+			break;
+
+		default:
+			break; //not expected
+	}
+
+	entrance_fd = open(entrance_fifo, O_WRONLY | O_NONBLOCK);
+
+	if(entrance_fd == -1){
+		fprintf(stderr,"Could not open fifo %s.\n", entrance_fifo);
+		pthread_exit(NULL);
+	}	
 
 	sprintf(vehicle->fifo_name, "vehicle%d", vehicle->id);
 
+	sem_t* semaphore = sem_open("semaphore", 0);
+	sem_wait(semaphore);
 	pthread_mutex_lock(&mutexes[vehicle->direction]);
-	write(fifo_fd, &(vehicle->id), sizeof(int));
-	write(fifo_fd, &(vehicle->parking_time), sizeof(int));
-	write(fifo_fd, &(vehicle->direction), sizeof(direction_t));
-	write(fifo_fd, vehicle->fifo_name, (strlen(vehicle->fifo_name)+1)*sizeof(char));
+	write(entrance_fd, &(vehicle->id), sizeof(int));
+	write(entrance_fd, &(vehicle->parking_time), sizeof(int));
+	write(entrance_fd, &(vehicle->direction), sizeof(direction_t));
+	write(entrance_fd, vehicle->fifo_name, (strlen(vehicle->fifo_name)+1)*sizeof(char));
 	pthread_mutex_unlock(&mutexes[vehicle->direction]);
+	sem_post(semaphore);
+	sem_close(semaphore);
 
 	if(mkfifo(vehicle->fifo_name, FIFO_MODE) == -1) {
 		fprintf(stderr, "The fifo %s could not be created.\n", vehicle->fifo_name);
@@ -68,46 +104,6 @@ void send_vehicle(vehicle_t* vehicle, int fifo_fd) {
 	}
 
 	unlink(vehicle->fifo_name);
-}
-
-/**
- * Handles the thread for every vehicle
- */
-void* vehicle_thread(void* arg) {
-	vehicle_t* vehicle = (vehicle_t*) arg;
-
-	char entrance_fifo[MAX_FIFONAME_SIZE];
-	int entrance_fd;
-
-	switch(vehicle->direction){
-		case NORTH:
-			strcpy(entrance_fifo,"fifoN");
-			break;
-
-		case EAST:
-			strcpy(entrance_fifo, "fifoE");
-			break;
-
-		case WEST:
-			strcpy(entrance_fifo, "fifoO");
-			break;
-
-		case SOUTH:
-			strcpy(entrance_fifo,"fifoS");
-			break;
-
-		default:
-			printf("%d", vehicle->direction);
-			break; //not expected
-	}
-
-	entrance_fd = open(entrance_fifo, O_WRONLY | O_NONBLOCK);
-
-	if(entrance_fd == -1){
-		fprintf(stderr,"Could not open fifo %s.\n", entrance_fifo);
-	} else {
-		send_vehicle(vehicle,entrance_fd);
-	}
 
 	free(vehicle);
 	pthread_exit(NULL);
@@ -206,7 +202,7 @@ int main(int argc, char* argv[]) {
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_init(&mutexes[i], NULL);
 	}
-	
+
 	start_generator(generation_time, update_rate);
 
 	for(i = 0; i < 4; i++) {
