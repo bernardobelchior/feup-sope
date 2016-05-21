@@ -58,7 +58,8 @@ void send_vehicle(vehicle_t* vehicle, int fifo_fd) {
 	pthread_mutex_unlock(&mutexes[vehicle->direction]);
 
 	vehicle_status_t status = -1;
-	int vehicle_fifo = open(vehicle->fifo_name, O_WRONLY);
+
+	int vehicle_fifo = open(vehicle->fifo_name,O_RDONLY);
 	
 	if(vehicle_fifo == -1) {
 		fprintf(stderr, "The fifo named %s could not be open.\n", vehicle->fifo_name);
@@ -103,7 +104,7 @@ void* vehicle_thread(void* arg) {
 			break;
 
 		default:
-			break; //not expecter
+			break; //not expected
 
 	}
 
