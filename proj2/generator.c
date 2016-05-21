@@ -54,7 +54,8 @@ void send_vehicle(vehicle_t* vehicle, int fifo_fd) {
 	} 
 
 	vehicle_status_t status = -1;
-	int vehicle_fifo = open(vehicle->fifo_name, O_RDONLY);
+
+	int vehicle_fifo = open(vehicle->fifo_name,O_RDONLY);
 	
 	if(vehicle_fifo == -1) {
 		fprintf(stderr, "The fifo named %s could not be open.\n", vehicle->fifo_name);
@@ -97,8 +98,8 @@ void* vehicle_thread(void* arg) {
 			break;
 
 		default:
-			printf("%d", vehicle->direction);
 			break; //not expected
+
 	}
 
 	entrance_fd = open(entrance_fifo, O_WRONLY | O_NONBLOCK);
