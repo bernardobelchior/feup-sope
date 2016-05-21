@@ -45,16 +45,16 @@ int vehicle_changed_state(vehicle_t *vehicle, int lifetime, vehicle_status_t v_s
  * Sends the vehicle to the specified fifo and
  * creates the vehicle specific fifo.
  */
-void send_vehicle(vehicle_t* vehicle) {
+void send_vehicle(vehicle_t* vehicle, int fifo_fd) {
 	int ticks_start = ticks;
 
 	sprintf(vehicle->fifo_name, "vehicle%d", vehicle->id);
 
 	pthread_mutex_lock(&mutexes[vehicle->direction]);
-	write(fifos[vehicle->direction], &(vehicle->id), sizeof(int));
-	write(fifos[vehicle->direction], &(vehicle->parking_time), sizeof(int));
-	write(fifos[vehicle->direction], &(vehicle->direction), sizeof(direction_t));
-	write(fifos[vehicle->direction], vehicle->fifo_name, (strlen(vehicle->fifo_name)+1)*sizeof(char));
+	write(fifo_fd, &(vehicle->id), sizeof(int));
+	write(fifo_fd, &(vehicle->parking_time), sizeof(int));
+	write(fifo_fd, &(vehicle->direction), sizeof(direction_t));
+	write(fifo_fd, vehicle->fifo_name, (strlen(vehicle->fifo_name)+1)*sizeof(char));
 	pthread_mutex_unlock(&mutexes[vehicle->direction]);
 
 	vehicle_status_t status = -1;
@@ -115,7 +115,7 @@ void* vehicle_thread(void* arg) {
 		
 	}
 
-	send_vehicle(vehicle);
+	send_vehicle(vehicle,entrance_fd);
 
 	pthread_exit(NULL);
 }
