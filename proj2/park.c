@@ -17,7 +17,6 @@
 
 #define NUM_CONTROLLERS 4
 
-#define FIFO_PATH_LENGTH 8
 #define FIFO_MODE 0666
 
 #define SV_IDENTIFIER -1
@@ -175,7 +174,7 @@ void *controller_func(void *arg){
 
 	//Creating FIFO
 	direction_t side = (*(int *) arg);
-	char fifo_path[FIFO_PATH_LENGTH];
+	char fifo_path[MAX_FIFONAME_SIZE];
 
 	switch (side){
 		case NORTH:
@@ -278,6 +277,12 @@ void *assistant_func(void *arg){
 	char fifo_name[MAX_FIFONAME_SIZE];
 
 	strcpy(fifo_name, (*(vehicle_t *)arg).fifo_name);
+
+	if(open(fifo_name, O_WRONLY) == -1){
+		fprintf(stderr,"The fifo %s could not be opened.\n",fifo_name);
+	}
+
+	//check for vacant parking spots
 
 	pthread_exit(NULL);
 }
