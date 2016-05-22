@@ -80,6 +80,13 @@ void* vehicle_thread(void* arg) {
 		exit(SEMAPHORE_CREATION_FAILED);
 	}
 
+	if(mkfifo(vehicle->fifo_name, FIFO_MODE) == -1) {
+		fprintf(stderr, "The fifo %s could not be created. (%s)\n", vehicle->fifo_name, strerror(errno));
+		free(vehicle);
+		close(entrance_fd);
+		pthread_exit(NULL);
+	} 
+
 	sem_wait(semaphore);
 	pthread_mutex_lock(&mutexes[vehicle->direction]);
 	write(entrance_fd, &(vehicle->id), sizeof(int));
@@ -91,13 +98,6 @@ void* vehicle_thread(void* arg) {
 	sem_close(semaphore);
 
 	close(entrance_fd);
-
-	if(mkfifo(vehicle->fifo_name, FIFO_MODE) == -1) {
-		fprintf(stderr, "The fifo %s could not be created. (%s)\n", vehicle->fifo_name, strerror(errno));
-		free(vehicle);
-		pthread_exit(NULL);
-	} 
-
 	vehicle_status_t status = -1;
 	int vehicle_fifo = open(vehicle->fifo_name, O_RDONLY);
 	

@@ -307,8 +307,8 @@ void *assistant_func(void *arg){
 	strcpy(fifo_name, (*(vehicle_t *)arg).fifo_name);
 
 	fifo_fd = open(fifo_name, O_WRONLY);
-	if( fifo_fd == -1){
-		fprintf(stderr,"The fifo %s could not be opened.\n",fifo_name);
+	if(fifo_fd == -1){
+		fprintf(stderr,"The fifo %s could not be opened. (%s)\n", fifo_name, strerror(errno));
 	}
 
 	//check for vacant parking spots
