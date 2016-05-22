@@ -164,6 +164,7 @@ int main(int argc, char *argv[]){
 
 	printf("Exiting main...\n");
 
+	pthread_exit(0);
 	return 0;
 }
 
@@ -283,7 +284,7 @@ void *controller_func(void *arg){
 	printf("Closing fifos\n");
 
 	printf("\tExiting controller thread\n");
-	pthread_exit(NULL);
+	pthread_exit(0);
 }
 
 /**
@@ -312,7 +313,6 @@ void *assistant_func(void *arg){
 
 	//check for vacant parking spots
 	
-	printf("%d\n",n_vacant);
 	pthread_mutex_lock(&park_mutex);
 	if(closed){
 		status = PARK_CLOSED;
@@ -330,9 +330,7 @@ void *assistant_func(void *arg){
 	}
 
 	else { //there are spots available
-		printf("spots available! n_vacant = %d\n",n_vacant);
 		n_vacant--;
-		printf(" available! n_vacant = %d\n",n_vacant);
 		status = ENTERED;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
 	}

@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <semaphore.h>
 #include <string.h>
@@ -92,7 +93,7 @@ void* vehicle_thread(void* arg) {
 	close(entrance_fd);
 
 	if(mkfifo(vehicle->fifo_name, FIFO_MODE) == -1) {
-		fprintf(stderr, "The fifo %s could not be created.\n", vehicle->fifo_name);
+		fprintf(stderr, "The fifo %s could not be created. (%s)\n", vehicle->fifo_name, strerror(errno));
 		free(vehicle);
 		pthread_exit(NULL);
 	} 
@@ -110,14 +111,15 @@ void* vehicle_thread(void* arg) {
 			printf("fifo name: %s\t status: %d\n",vehicle->fifo_name, status);
 			log_vehicle(vehicle, ticks-ticks_start, status);
   		} while(status == ENTERED); 
+		printf("vehicle: %d\tstatus: %d\n", vehicle->id, status);
 
 		close(vehicle_fifo);
 	}
 
-	printf("Vehicle fifo %s unlink %d\n",vehicle->fifo_name,unlink(vehicle->fifo_name));
+	printf("vehicle: %d\tunlink status: %d\n",vehicle->id, unlink(vehicle->fifo_name));
 
 	free(vehicle);
-	pthread_exit(NULL);
+	pthread_exit(0);
 }
 
 /**
@@ -222,5 +224,6 @@ int main(int argc, char* argv[]) {
 
 	printf("Exiting generator main\n");
 
+	pthread_exit(0);
 	return 0;
 }
