@@ -17,13 +17,11 @@
 #include <errno.h>
 
 #define NUM_CONTROLLERS 4
-
 #define FIFO_MODE 0666
-
 #define SV_IDENTIFIER -1
 
 pthread_mutex_t park_mutex;
-int n_vacant, closed;
+int n_vacant, closed, n_spaces;
 FILE *logger;
 
 /**
@@ -33,6 +31,15 @@ FILE *logger;
 void print_usage(){
 
 	printf("Run as: ./parque <N_LUGARES> <TEMPO_ABERTURA>\nN_LUGARES and TEMPO_ABERTURA must be positive integers\n");
+}
+
+/**
+ * vehicle logger
+ *
+ * puts information about a vehicle in a CSV file
+ * */
+void log_vehicle(int tick,int vehicle_id, vehicle_status_t status){
+	fprintf(logger,"%d;\t\t%d;\t%d;\t\t%s\n",tick,n_spaces - n_vacant, vehicle_id, messages_array[status]);
 }
 
 /**
@@ -47,6 +54,8 @@ void print_usage(){
 void *assistant_func(void *arg){
 	
 	//get vehicle info
+	int id = (*(vehicle_t *) arg).id;
+	int tick_created = (*(vehicle_t *)arg).creation_time;
 	int park_time = (*(vehicle_t *)arg).parking_time;	
 	char fifo_name[MAX_FIFONAME_SIZE];
 	int fifo_fd;
@@ -65,6 +74,7 @@ void *assistant_func(void *arg){
 		status = PARK_CLOSED;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
 		close(fifo_fd);
+		log_vehicle(tick_created,id,status);
 		pthread_mutex_unlock(&park_mutex);
 		pthread_exit(NULL);
 	}
@@ -72,6 +82,7 @@ void *assistant_func(void *arg){
 		status = PARK_FULL;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
 		close(fifo_fd);
+		log_vehicle(tick_created,id,status);
 		pthread_mutex_unlock(&park_mutex);
 		pthread_exit(NULL);
 	}
@@ -79,6 +90,7 @@ void *assistant_func(void *arg){
 		n_vacant--;
 		status = ENTERED;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
+		log_vehicle(tick_created,id,status);
 	}
 	pthread_mutex_unlock(&park_mutex);
 
@@ -89,6 +101,7 @@ void *assistant_func(void *arg){
 	n_vacant++;
 	status = EXITED; 
 	write(fifo_fd,&status,sizeof(vehicle_status_t));
+	log_vehicle(tick_created + park_time,id,status);
 	close(fifo_fd);
 
 	pthread_exit(NULL);
@@ -225,7 +238,7 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	
-	int n_spaces, time_open;
+	int time_open;
 
 	n_spaces = atoi(argv[1]);
 	time_open = atoi(argv[2]);
@@ -236,6 +249,8 @@ int main(int argc, char *argv[]){
 	if(logger == NULL){
 		fprintf(stderr,"park.c :: main() :: Failed to open parque.log");
 	}
+
+	fprintf(logger,"t(ticks);\tnlug;\tid_viat;\tobserv\n");
 
 	if(pthread_mutex_init(&park_mutex,NULL) != 0)
 		fprintf(stderr,"park.c :: main() :: Failed to create park mutex!\n");
