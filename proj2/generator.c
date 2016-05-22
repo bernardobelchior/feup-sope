@@ -21,6 +21,7 @@
 #define FIFO_NOT_CREATED 11
 
 int generate_vehicles = 1;
+int no_active_vehicles = 0;
 FILE* logger; 
 int ticks;
 pthread_mutex_t mutexes[4];
@@ -29,8 +30,17 @@ pthread_mutex_t mutexes[4];
  * Writes the vehicle status to the log file.
  */
 void log_vehicle(vehicle_t *vehicle, int lifetime, vehicle_status_t v_status) {
-	if(logger != NULL)
-		fprintf(logger, "%d;%d;%d;%d;%d;%s\n", ticks, vehicle->id, vehicle->direction, vehicle->parking_time, lifetime, messages_array[v_status]);
+	if(logger != NULL) {
+		//If lifetime == 0, then the lifetime is unknown, so the log
+		//should display a '?'. Otherwise display the lifetime.
+		char lifetime_str[10];
+		if(lifetime == 0)
+			sprintf(lifetime_str, "%s", "?");
+		else 
+			sprintf(lifetime_str, "%d", lifetime);
+
+		fprintf(logger, "%d;%d;%s;%d;%s;%s\n", ticks, vehicle->id, direction_names[vehicle->direction], vehicle->parking_time, lifetime_str, messages_array[v_status]);
+	}
 }
 
 /**
@@ -98,6 +108,7 @@ void* vehicle_thread(void* arg) {
 	sem_wait(semaphore);
 	pthread_mutex_lock(&mutexes[vehicle->direction]);
 	write(entrance_fd, &(vehicle->id), sizeof(int));
+	write(entrance_fd, &(vehicle->creation_time), sizeof(int));
 	write(entrance_fd, &(vehicle->parking_time), sizeof(int));
 	write(entrance_fd, &(vehicle->direction), sizeof(direction_t));
 	write(entrance_fd, vehicle->fifo_name, (strlen(vehicle->fifo_name)+1)*sizeof(char));
@@ -123,6 +134,7 @@ void* vehicle_thread(void* arg) {
 	printf("vehicle: %d\tunlink status: %d\n",vehicle->id, unlink(vehicle->fifo_name));
 
 	free(vehicle);
+	no_active_vehicles--;
 	pthread_exit(0);
 }
 
@@ -131,8 +143,9 @@ void* vehicle_thread(void* arg) {
  */
 void alarm_fired(int signo) {
 	if(signo == SIGALRM)
+		//When the SIGALRM fires, the vehicle generation
+		//must stop. As such, the corresponding flag is set to false.
 		generate_vehicles = 0;
-	printf("Alarm Fired!!\n");
 }
 
 /**
@@ -164,9 +177,15 @@ void generate_vehicle(int update_rate) {
 
 	vehicle->id = nextId;
 	nextId++;
+	vehicle->creation_time = ticks;
+	//Randomly generates a parking_time between 1 and 10
+	//times the update_rate
 	vehicle->parking_time = update_rate * ((rand() % 10) + 1);
+	//Randomly generates a direction
 	vehicle->direction = rand() % 4;
 
+	//Creates the vehicle thread, sends the generated vehicle
+	//and detaches it.
 	pthread_t thread;
 	pthread_create(&thread, NULL, vehicle_thread, (void *) vehicle);
 	pthread_detach(thread);
@@ -178,22 +197,35 @@ void generate_vehicle(int update_rate) {
 void start_generator(int generation_time, int update_rate) {
 	ticks = 0;
 	int ticks_to_next_vehicle = get_ticks_to_next_vehicle();
-
+	
+	//Sets up the alarm to be called in generation_time seconds
+	//that will handle the vehicle generation
 	alarm(generation_time);
 
-	while(generate_vehicles) {
-		if(ticks_to_next_vehicle == 0) {
-			generate_vehicle(update_rate);
-			ticks_to_next_vehicle = get_ticks_to_next_vehicle();
-		} else
-			ticks_to_next_vehicle--;
+	//Updates ticks while vehicles must be generated or 
+	//while there are still active vehicles
+	while(generate_vehicles || no_active_vehicles) {
 
-		usleep(update_rate*1000);
-		ticks+= update_rate;
+		if(generate_vehicles) {
+			//If the vehicle must be generated this tick, generate it
+			//otherwise decrement the ticks until the next vehicle is generated
+			if(ticks_to_next_vehicle == 0) {
+				generate_vehicle(update_rate);
+				no_active_vehicles++;
+				ticks_to_next_vehicle = get_ticks_to_next_vehicle();
+			} else
+				ticks_to_next_vehicle--;
+		}
+
+		//Sleeps for update_rate in clock ticks
+		//FIXME: Change to actual clock ticks
+		usleep(update_rate*TICKS_PER_MICROSECONDS);
+		ticks += update_rate;
 	}
 }
 
 int main(int argc, char* argv[]) {
+	//Checks if the number of arguments is correct
 	if(argc != 3) {
 		fprintf(stderr, "Incorrect use of program.\nShould be used in this format:\ngerador <generation_time> <update_rate>\n");
 		return 1;
@@ -211,24 +243,29 @@ int main(int argc, char* argv[]) {
 	else
 		fprintf(logger, "ticks;id;dest;t_est;t_vida;observ\n");
 
+	//Sets the SIGALRM handler
+	//FIXME: Change to sigaction
 	if(signal(SIGALRM, alarm_fired) == SIG_ERR) {
 		fprintf(stderr, "Could not set up signal handler for SIGALRM.\n");
 	}
 
+	//Initializes a mutex for every direction
 	int i;
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_init(&mutexes[i], NULL);
 	}
 
-	//FIXME: ticks not working correctly
 	start_generator(generation_time, update_rate);
 
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_destroy(&mutexes[i]);
 	}
 
-	printf("Exiting generator main\n");
+	printf("Exiting generator main.\n");
 
+	//Waits for the other thread before closing the process.
+	//It is needed otherwise the process would end and close
+	//all the running threads.
 	pthread_exit(0);
 	return 0;
 }

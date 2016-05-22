@@ -5,6 +5,7 @@
  */
 
 #define MAX_FIFONAME_SIZE 64
+#define TICKS_PER_MICROSECONDS 1000
 
 typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
 
@@ -12,6 +13,7 @@ const char* direction_names[4] = { "North", "South", "East", "West"};
 
 typedef struct {
 	int id;
+	int creation_time;
 	int parking_time;
 	direction_t direction;
 	char fifo_name[MAX_FIFONAME_SIZE];
