@@ -315,14 +315,14 @@ void *assistant_func(void *arg){
 		status = PARK_CLOSED;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
 		close(fifo_fd);
-		unlink(fifo_name);
+		pthread_mutex_unlock(&park_mutex);
 		pthread_exit(NULL);
 	}
 	else if(n_vacant == 0){ //no parking spots available, sends a message and exits
 		status = PARK_FULL;
 		write(fifo_fd,&status,sizeof(vehicle_status_t));
 		close(fifo_fd);
-		unlink(fifo_name);
+		pthread_mutex_unlock(&park_mutex);
 		pthread_exit(NULL);
 	}
 
@@ -341,6 +341,5 @@ void *assistant_func(void *arg){
 	write(fifo_fd,&status,sizeof(vehicle_status_t));
 	close(fifo_fd);
 
-	unlink(fifo_name);
 	pthread_exit(NULL);
 }

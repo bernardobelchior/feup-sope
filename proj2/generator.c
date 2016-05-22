@@ -113,10 +113,9 @@ void* vehicle_thread(void* arg) {
 	} else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
-			printf("%d\n", status);
+			printf("vehicle: %d\tstatus: %d\n", vehicle->id, status);
 			log_vehicle(vehicle, ticks-ticks_start, status);
   		} while(status == ENTERED); 
-		printf("vehicle: %d\tstatus: %d\n", vehicle->id, status);
 
 		close(vehicle_fifo);
 	}
