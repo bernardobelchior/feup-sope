@@ -67,8 +67,14 @@ void* vehicle_thread(void* arg) {
 
 	entrance_fd = open(entrance_fifo, O_WRONLY | O_NONBLOCK);
 
+	vehicle_status_t status = -1;
+
 	if(entrance_fd == -1){
 		fprintf(stderr,"Could not open fifo %s.\n", entrance_fifo);
+		status = PARK_CLOSED;
+		log_vehicle(vehicle, ticks-ticks_start, status);
+		free(vehicle);
+		close(entrance_fd);
 		pthread_exit(NULL);
 	}	
 
@@ -77,7 +83,9 @@ void* vehicle_thread(void* arg) {
 	sem_t* semaphore = sem_open(semaphore_name, O_CREAT, FIFO_MODE, 1);
 	if(semaphore == SEM_FAILED) {
 		fprintf(stderr, "Semaphore failed to be created.\nExiting program...");
-		exit(SEMAPHORE_CREATION_FAILED);
+		free(vehicle);
+		close(entrance_fd);
+		pthread_exit(NULL);
 	}
 
 	if(mkfifo(vehicle->fifo_name, FIFO_MODE) == -1) {
@@ -98,17 +106,14 @@ void* vehicle_thread(void* arg) {
 	sem_close(semaphore);
 
 	close(entrance_fd);
-	vehicle_status_t status = -1;
 	int vehicle_fifo = open(vehicle->fifo_name, O_RDONLY);
 	
 	if(vehicle_fifo == -1) {
 		fprintf(stderr, "The fifo named %s could not be open.\n", vehicle->fifo_name);
-	}
-  
-	else {
+	} else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
-			printf("fifo name: %s\t status: %d\n",vehicle->fifo_name, status);
+			printf("%d\n", status);
 			log_vehicle(vehicle, ticks-ticks_start, status);
   		} while(status == ENTERED); 
 		printf("vehicle: %d\tstatus: %d\n", vehicle->id, status);
@@ -216,6 +221,7 @@ int main(int argc, char* argv[]) {
 		pthread_mutex_init(&mutexes[i], NULL);
 	}
 
+	//FIXME: ticks not working correctly
 	start_generator(generation_time, update_rate);
 
 	for(i = 0; i < 4; i++) {

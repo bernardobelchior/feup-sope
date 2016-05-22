@@ -5,7 +5,6 @@
  */
 
 #define MAX_FIFONAME_SIZE 64
-#define SEMAPHORE_CREATION_FAILED 4
 
 typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
 

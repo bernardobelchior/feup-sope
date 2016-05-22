@@ -118,7 +118,7 @@ int main(int argc, char *argv[]){
 	sem_t *semaphore = sem_open(semaphore_name, O_CREAT, FIFO_MODE, 1);
 	if(semaphore == SEM_FAILED) {
 		fprintf(stderr, "Semaphore failed to be created.\nExiting program...");
-	   exit(SEMAPHORE_CREATION_FAILED);
+		pthread_exit(NULL);
 	}
 	     
 	sem_wait(semaphore);
@@ -140,6 +140,11 @@ int main(int argc, char *argv[]){
 	sem_close(semaphore);
 	sem_unlink(semaphore_name);
 
+	printf("\tClosing fifos\n");
+	close(fd_N);
+	close(fd_E);
+	close(fd_O);
+	close(fd_S);
 
 	printf("\tJoining threads\n");
 	for(i = 0; i < 4; i++){
@@ -148,14 +153,6 @@ int main(int argc, char *argv[]){
 		}
 		printf("\tmain() :: thread %d joined\n",i);
 	}
-	
-
-	printf("\tClosing fifos\n");
-	close(fd_N);
-	close(fd_E);
-	close(fd_O);
-	close(fd_S);
-
 	printf("\tunlinking fifos\n");
 	printf("fifoN unlink %d\n",unlink("fifoN"));
 	printf("fifoS unlink %d\n",unlink("fifoS"));
@@ -244,10 +241,10 @@ void *controller_func(void *arg){
 		read(fifo_fd,&curr_entrance,sizeof(int));
 		read(fifo_fd,curr_fifoname,MAX_FIFONAME_SIZE);
 
+		//TODO remove this
 		if(x > 0 && curr_id != SV_IDENTIFIER)
 			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
 				side,curr_id, curr_park_time, curr_entrance,curr_fifoname);
-
 		
 		pthread_t assistant_tid;
 		vehicle_t vehicle;
@@ -275,13 +272,13 @@ void *controller_func(void *arg){
 		vehicle.id = curr_id;
 		vehicle.parking_time = curr_park_time;
 		vehicle.direction = curr_entrance;
-		strcpy(vehicle.fifo_name,curr_fifoname);
+		strcpy(vehicle.fifo_name, curr_fifoname);
 
 		pthread_create(&assistant_tid,NULL,assistant_func,&vehicle);
 		pthread_detach(assistant_tid);
 	}
 
-	printf("Closing fifos\n");
+	close(fifo_fd);
 
 	printf("\tExiting controller thread\n");
 	pthread_exit(0);
