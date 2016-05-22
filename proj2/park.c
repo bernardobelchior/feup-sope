@@ -65,7 +65,7 @@ void *assistant_func(void *arg){
 
 	fifo_fd = open(fifo_name, O_WRONLY);
 	if(fifo_fd == -1){
-		fprintf(stderr,"The fifo %s could not be opened. (%s)\n", fifo_name, strerror(errno));
+		fprintf(stderr,"park.c :: assistant thread :: the fifo %s could not be opened. (%s)\n", fifo_name, strerror(errno));
 	}
 
 	//check for vacant parking spots
@@ -147,7 +147,7 @@ void *controller_func(void *arg){
 	fifo_fd = open(fifo_path,O_RDONLY);
 
 	if(fifo_fd == -1){
-		printf("\tError opening file\n");
+		fprintf(stderr,"park.c :: controller thread :: Error opening fifo\n");
 	}
 
 	//Read the request
@@ -218,7 +218,6 @@ void *controller_func(void *arg){
 	//close the entrance fifo and exit
 	close(fifo_fd);
 
-	printf("\tExiting controller thread\n");
 	pthread_exit(0);
 }
 
@@ -261,19 +260,19 @@ int main(int argc, char *argv[]){
 	}
 
 	if(mkfifo("fifoN",FIFO_MODE) != 0){
-		printf("Failed making fifoN\n");
+		fprintf(stderr,"park.c :: main() :: Failed making fifoN\n");
 	}
 
 	if(mkfifo("fifoE",FIFO_MODE) != 0){
-		printf("Failed making fifoE\n");
+		fprintf(stderr, "park.c :: main() :: Failed making fifoE\n");
 	}
 
 	if(mkfifo("fifoO",FIFO_MODE) != 0){
-		printf("Failed making fifoO\n");
+		fprintf(stderr,"park.c :: main() :: Failed making fifoO\n");
 	}
 
 	if(mkfifo("fifoS",FIFO_MODE) != 0){
-		printf("Failed making fifoS\n");
+		fprintf(stderr,"park.c :: main() :: Failed making fifoS\n");
 	}
 	
 	//creating the 4 "controller" threads
@@ -285,7 +284,7 @@ int main(int argc, char *argv[]){
 	for(i = 0; i < NUM_CONTROLLERS; i++){
 		thrargs[i] = i;
 		if(pthread_create(&controllers[i],NULL,controller_func, &thrargs[i]) != 0){ 
-			printf("\tmain() :: error creating controller threads\n");
+			printf("park.c :: main() :: error creating controller threads\n");
 			return 3;
 		}
 	}
@@ -294,22 +293,22 @@ int main(int argc, char *argv[]){
 
 	fd_N = open("fifoN",O_WRONLY);
 	if(fd_N == -1){
-		printf("Error opening fifoN\n");
+		fprintf(stderr,"park.c :: main() :: Error opening fifoN\n");
 	}
 
 	fd_E = open("fifoE",O_WRONLY);
 	if(fd_E == -1){
-		printf("Error opening fifoE\n");
+		fprintf(stderr,"park.c :: main() :: Error opening fifoE\n");
 	}
 
 	fd_O = open("fifoO",O_WRONLY);
 	if(fd_O == -1){
-		printf("Error opening fifoO\n");
+		fprintf(stderr,"park.c :: main() :: Error opening fifoO\n");
 	}
 
 	fd_S = open("fifoS",O_WRONLY);
 	if(fd_N == -1){
-		printf("Error opening fifoS\n");
+		fprintf(stderr,"park.c :: main() :: Error opening fifoS\n");
 	}
 	
 	//wait for time and send SV
@@ -317,7 +316,7 @@ int main(int argc, char *argv[]){
 
 	sem_t *semaphore = sem_open(semaphore_name, O_CREAT, FIFO_MODE, 1);
 	if(semaphore == SEM_FAILED) {
-		fprintf(stderr, "Semaphore failed to be created.\nExiting program...");
+		fprintf(stderr,"park.c :: main() :: semaphore failed to be created.\nExiting program...");
 		pthread_exit(NULL);
 	}
 	     
@@ -325,16 +324,16 @@ int main(int argc, char *argv[]){
 	int sv = SV_IDENTIFIER;
 
 	if(write(fd_N, &sv, sizeof(int)) == -1)
-		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+		fprintf(stderr,"park.c :: main() :: error writing sv - %s\n",strerror(errno));
 
 	if(write(fd_E, &sv, sizeof(int)) == -1)
-		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+		fprintf(stderr,"park.c :: main() :: error writing sv - %s\n",strerror(errno));
 
 	if(write(fd_O, &sv, sizeof(int)) == -1)
-		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+		fprintf(stderr,"park.c :: main() :: error writing sv - %s\n",strerror(errno));
 
 	if(write(fd_S, &sv, sizeof(int)) == -1)
-		printf("\tmain() :: error writing sv - %s\n",strerror(errno));
+		fprintf(stderr,"park.c :: main() :: error writing sv - %s\n",strerror(errno));
 	sem_post(semaphore);
 	sem_close(semaphore);
 	sem_unlink(semaphore_name);
@@ -347,14 +346,21 @@ int main(int argc, char *argv[]){
 
 	for(i = 0; i < 4; i++){
 		if(pthread_join(controllers[i],NULL) != 0){ 
-			printf("\tmain() :: error joining controller threads\n");
+			fprintf(stderr,"park.c :: main() :: error joining controller threads\n");
 		}
 	}
 
-	printf("fifoN unlink %d\n",unlink("fifoN"));
-	printf("fifoS unlink %d\n",unlink("fifoS"));
-	printf("fifoE unlink %d\n",unlink("fifoE"));
-	printf("fifoO unlink %d\n",unlink("fifoO"));
+	if(unlink("fifoN") != 0)
+		fprintf(stderr,"park.c :: main() :: failed unlinking fifoN\n");
+
+	if(unlink("fifoE") != 0)
+		fprintf(stderr,"park.c :: main() :: failed unlinking fifoE\n");
+
+	if(unlink("fifoO") != 0)
+		fprintf(stderr,"park.c :: main() :: failed unlinking fifoO\n");
+	
+	if(unlink("fifoS") != 0)
+		fprintf(stderr,"park.c :: main() :: failed unlinking fifoS\n");
 
 	pthread_exit(0);
 }
