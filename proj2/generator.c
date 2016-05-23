@@ -193,11 +193,23 @@ void generate_vehicle(int update_rate) {
 	pthread_detach(thread);
 }
 
+/**
+ * Sleeps for ticks_to_sleep measured in clock ticks.
+ */
 void sleep_for_ticks(int ticks_to_sleep) {
-	//struct timespec time;
+	struct timespec time_to_sleep;
+	struct timespec time_remaining;
 
-	usleep(ticks_to_sleep*pow(10, 6)/TICKS_PER_SECOND);
-	//usleep(ticks_to_sleep*TICKS_PER_MICROSECONDS);
+	time_to_sleep.tv_sec = ticks_to_sleep/TICKS_PER_SECOND;
+	time_to_sleep.tv_nsec = ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND;
+
+	while(nanosleep(&time_to_sleep, &time_remaining)) {
+		if(errno == EINTR) {
+			time_to_sleep.tv_sec = time_remaining.tv_sec;
+			time_to_sleep.tv_nsec = time_remaining.tv_nsec;
+		} else
+			fprintf(stderr, "Error with nanosleep. (%s)\n", strerror(errno));
+	}
 }
 
 /**
@@ -227,7 +239,6 @@ void start_generator(int generation_time, int update_rate) {
 		}
 
 		//Sleeps for update_rate in clock ticks
-		//FIXME: Change to actual clock ticks
 		sleep_for_ticks(update_rate);
 		ticks += update_rate;
 	}

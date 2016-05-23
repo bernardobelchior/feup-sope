@@ -250,7 +250,7 @@ int main(int argc, char *argv[]){
 		fprintf(stderr,"park.c :: main() :: Failed to open parque.log");
 	}
 
-	fprintf(logger,"t(ticks);\tnlug;\tid_viat;\tobserv\n");
+	fprintf(logger,"t(ticks);\tnlug\t;\tid_viat\t;\tobserv\n");
 
 	if(pthread_mutex_init(&park_mutex,NULL) != 0)
 		fprintf(stderr,"park.c :: main() :: Failed to create park mutex!\n");
