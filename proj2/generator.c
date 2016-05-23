@@ -39,7 +39,7 @@ void log_vehicle(vehicle_t *vehicle, int lifetime, vehicle_status_t v_status) {
 		else 
 			sprintf(lifetime_str, "%d", lifetime);
 
-		fprintf(logger, "%d;%d;%s;%d;%s;%s\n", ticks, vehicle->id, direction_names[vehicle->direction], vehicle->parking_time, lifetime_str, messages_array[v_status]);
+		fprintf(logger, "%d\t;\t%d\t;\t%s\t;\t%d\t;\t%s\t;\t%s\n", ticks, vehicle->id, direction_names[vehicle->direction], vehicle->parking_time, lifetime_str, messages_array[v_status]);
 	}
 }
 
@@ -124,14 +124,13 @@ void* vehicle_thread(void* arg) {
 	} else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
-			printf("vehicle: %d\tstatus: %d\n", vehicle->id, status);
+			printf("vehicle: %d\tstatus: %s\n", vehicle->id, messages_array[status]);
 			log_vehicle(vehicle, ticks-ticks_start, status);
   		} while(status == ENTERED); 
 
 		close(vehicle_fifo);
 	}
-
-	printf("vehicle: %d\tunlink status: %d\n",vehicle->id, unlink(vehicle->fifo_name));
+	unlink(vehicle->fifo_name);
 
 	free(vehicle);
 	no_active_vehicles--;
@@ -241,7 +240,7 @@ int main(int argc, char* argv[]) {
 	if(logger == NULL)
 		fprintf(stderr, "Logger could not be open.\n");
 	else
-		fprintf(logger, "ticks;id;dest;t_est;t_vida;observ\n");
+		fprintf(logger, "ticks\t;\tid\t;\tdest\t;\tt_est\t;\tt_vida\t;\tobserv\n");
 
 	//Sets the SIGALRM handler
 	//FIXME: Change to sigaction
