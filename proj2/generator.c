@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <math.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -15,6 +16,7 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #include <string.h>
+#include <sys/times.h>
 #include "vehicle.h"
 
 #define FIFO_MODE 0666
@@ -24,6 +26,7 @@ int generate_vehicles = 1;
 int no_active_vehicles = 0;
 FILE* logger; 
 int ticks;
+clock_t TICKS_PER_SECOND;
 pthread_mutex_t mutexes[4];
 
 /**
@@ -190,6 +193,13 @@ void generate_vehicle(int update_rate) {
 	pthread_detach(thread);
 }
 
+void sleep_for_ticks(int ticks_to_sleep) {
+	//struct timespec time;
+
+	usleep(ticks_to_sleep*pow(10, 6)/TICKS_PER_SECOND);
+	//usleep(ticks_to_sleep*TICKS_PER_MICROSECONDS);
+}
+
 /**
  * Starts and runs the vehicle generator for generation_time seconds.
  */
@@ -218,7 +228,7 @@ void start_generator(int generation_time, int update_rate) {
 
 		//Sleeps for update_rate in clock ticks
 		//FIXME: Change to actual clock ticks
-		usleep(update_rate*TICKS_PER_MICROSECONDS);
+		sleep_for_ticks(update_rate);
 		ticks += update_rate;
 	}
 }
@@ -234,6 +244,7 @@ int main(int argc, char* argv[]) {
 
 	int generation_time = atoi(argv[1]);
 	int update_rate = atoi(argv[2]);
+	TICKS_PER_SECOND = sysconf(_SC_CLK_TCK);
 	
 	logger = fopen("gerador.log", "w"); 
 
