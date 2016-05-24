@@ -22,4 +22,4 @@ typedef struct {
 typedef enum { PARK_FULL, ENTERED, EXITED, PARK_CLOSED} vehicle_status_t;
 
 const char* messages_array[4] = { "cheio!", "entrada", "saida", "encerrado" };
-const char* semaphore_name = "/semaphore";
+#define semaphore_name "/semaphore"

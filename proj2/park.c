@@ -80,34 +80,32 @@ void *assistant_func(void *arg){
 		fprintf(stderr,"park.c :: assistant thread :: the fifo %s could not be opened. (%s)\n", fifo_name, strerror(errno));
 	}
 
-	//check for vacant parking spots
+	//check for vacant parking spots, using a mutex to avoid racing condition
 	pthread_mutex_lock(&park_mutex);
+
 	if(closed){
 		status = PARK_CLOSED;
-		write(fifo_fd,&status,sizeof(vehicle_status_t));
-		close(fifo_fd);
-		log_vehicle(tick_created,id,status);
-		pthread_mutex_unlock(&park_mutex);
-		pthread_exit(NULL);
 	}
-	else if(n_vacant == 0){ //no parking spots available, sends a message and exits
+	else if(n_vacant == 0){ //no parking spots available
 		status = PARK_FULL;
-		write(fifo_fd,&status,sizeof(vehicle_status_t));
-		close(fifo_fd);
-		log_vehicle(tick_created,id,status);
-		pthread_mutex_unlock(&park_mutex);
-		pthread_exit(NULL);
 	}
 	else { //there are spots available
 		n_vacant--;
 		status = ENTERED;
-		write(fifo_fd,&status,sizeof(vehicle_status_t));
-		log_vehicle(tick_created,id,status);
 	}
+
 	pthread_mutex_unlock(&park_mutex);
 
+
+	write(fifo_fd, &status, sizeof(vehicle_status_t));
+	log_vehicle(tick_created, id, status);
+	
+	if(status != ENTERED){ //discard the thread, vehicle did not enter
+		close(fifo_fd);
+		pthread_exit(NULL);
+	}
+
 	//wait for the vehicle park time to end
-	/*usleep(park_time*1000);*/
 	sleep_for_ticks(park_time);
 
 	//removes the vehicle from the park and sends the appropriate message
@@ -187,11 +185,6 @@ void *controller_func(void *arg){
 		read(fifo_fd,&curr_entrance,sizeof(int));
 		read(fifo_fd,curr_fifoname,MAX_FIFONAME_SIZE);
 
-		//TODO remove this
-		if(x > 0 && curr_id != SV_IDENTIFIER)
-			printf("This is entrance %s\tid: %d\ttime: %d\tentrance: %d\tname: %s\n",
-				direction_names[side],curr_id, curr_park_time, curr_entrance,curr_fifoname);
-		
 		//creating an assistant thread and a vehicle struct to send the info about the vehicle
 		pthread_t assistant_tid;
 		vehicle_t vehicle;
@@ -329,6 +322,7 @@ int main(int argc, char *argv[]){
 	//wait for time and send SV
 	sleep(time_open);
 
+	//opening a semaphore to stop the generator from sending vehicles to write the SV
 	sem_t *semaphore = sem_open(semaphore_name, O_CREAT, FIFO_MODE, 1);
 	if(semaphore == SEM_FAILED) {
 		fprintf(stderr,"park.c :: main() :: semaphore failed to be created.\nExiting program...");
@@ -336,6 +330,7 @@ int main(int argc, char *argv[]){
 	}
 	     
 	sem_wait(semaphore);
+
 	int sv = SV_IDENTIFIER;
 
 	if(write(fd_N, &sv, sizeof(int)) == -1)
@@ -349,6 +344,7 @@ int main(int argc, char *argv[]){
 
 	if(write(fd_S, &sv, sizeof(int)) == -1)
 		fprintf(stderr,"park.c :: main() :: error writing sv - %s\n",strerror(errno));
+
 	sem_post(semaphore);
 	sem_close(semaphore);
 	sem_unlink(semaphore_name);
