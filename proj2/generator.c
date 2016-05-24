@@ -30,17 +30,17 @@ pthread_mutex_t mutexes[4];
 /**
  * Writes the vehicle status to the log file.
  */
-void log_vehicle(vehicle_t *vehicle, int lifetime, vehicle_status_t v_status) {
+void log_vehicle(vehicle_t *vehicle, vehicle_status_t v_status) {
 	if(logger != NULL) {
 		//If lifetime == 0, then the lifetime is unknown, so the log
 		//should display a '?'. Otherwise display the lifetime.
 		char lifetime_str[10];
-		if(lifetime == 0)
-			sprintf(lifetime_str, "%s", "?");
+		if(v_status == EXITED)
+			sprintf(lifetime_str, "%d", vehicle->parking_time);
 		else 
-			sprintf(lifetime_str, "%d", lifetime);
+			sprintf(lifetime_str, "%s", "?");
 
-		fprintf(logger, "%d\t;\t%d\t;\t%s\t;\t%d\t;\t%s\t;\t%s\n", ticks, vehicle->id, direction_names[vehicle->direction], vehicle->parking_time, lifetime_str, messages_array[v_status]);
+		fprintf(logger, "%d\t;\t%d\t;\t%s\t;\t%d\t;\t%s\t;\t%s\n", vehicle->creation_time+vehicle->parking_time, vehicle->id, direction_names[vehicle->direction], vehicle->parking_time, lifetime_str, messages_array[v_status]);
 	}
 }
 
@@ -82,7 +82,7 @@ void* vehicle_thread(void* arg) {
 	if(entrance_fd == -1){ //Could not open fifo
 		fprintf(stderr,"generator.c :: vehicle_thread() :: Could not open fifo %s.\n", entrance_fifo);
 		status = PARK_CLOSED;
-		log_vehicle(vehicle, 0, status);
+		log_vehicle(vehicle, status);
 		free(vehicle);
 		n_active_vehicles--;
 		pthread_exit(NULL);
@@ -126,7 +126,7 @@ void* vehicle_thread(void* arg) {
 	} else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
-			log_vehicle(vehicle, ticks-vehicle->creation_time, status);
+			log_vehicle(vehicle, status);
   		} while(status == ENTERED); 
 
 		close(vehicle_fifo);
