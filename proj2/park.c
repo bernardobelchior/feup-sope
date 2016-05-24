@@ -372,6 +372,9 @@ int main(int argc, char *argv[]){
 	if(unlink("fifoS") != 0)
 		fprintf(stderr,"park.c :: main() :: failed unlinking fifoS\n");
 
+	if(logger != NULL)
+		fclose(logger);
+
 	pthread_exit(0);
 }
 

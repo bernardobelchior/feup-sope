@@ -125,7 +125,6 @@ void* vehicle_thread(void* arg) {
 	} else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
-			printf("vehicle: %d\tstatus: %s\n", vehicle->id, messages_array[status]);
 			log_vehicle(vehicle, ticks-vehicle->creation_time, status);
   		} while(status == ENTERED); 
 
@@ -255,7 +254,7 @@ int main(int argc, char* argv[]) {
 	int update_rate = atoi(argv[2]);
 
 	if(generation_time <= 0 || update_rate <= 0) {
-		fprintf(stderr, "Incorrect use of program.\nShould be used in this format:\n./gerador <generation_time> <update_rate>\nWhere <generation_time> and <update_rate> must be non-null positive integers.\n");
+		fprintf(stderr, "Incorrect use of program.\nShould be used in this format:\n./gerador <generation_time> <update_rate>\nWhere <generation_time> and <update_rate> must be non-zero positive integers.\n");
 		return 1;
 	}
 
