@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <math.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -15,6 +16,7 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #include <string.h>
+#include <sys/times.h>
 #include "vehicle.h"
 
 #define FIFO_MODE 0666
@@ -24,6 +26,7 @@ int generate_vehicles = 1;
 int no_active_vehicles = 0;
 FILE* logger; 
 int ticks;
+clock_t TICKS_PER_SECOND;
 pthread_mutex_t mutexes[4];
 
 /**
@@ -39,7 +42,7 @@ void log_vehicle(vehicle_t *vehicle, int lifetime, vehicle_status_t v_status) {
 		else 
 			sprintf(lifetime_str, "%d", lifetime);
 
-		fprintf(logger, "%d;%d;%s;%d;%s;%s\n", ticks, vehicle->id, direction_names[vehicle->direction], vehicle->parking_time, lifetime_str, messages_array[v_status]);
+		fprintf(logger, "%d\t;\t%d\t;\t%s\t;\t%d\t;\t%s\t;\t%s\n", ticks, vehicle->id, direction_names[vehicle->direction], vehicle->parking_time, lifetime_str, messages_array[v_status]);
 	}
 }
 
@@ -124,14 +127,13 @@ void* vehicle_thread(void* arg) {
 	} else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
-			printf("vehicle: %d\tstatus: %d\n", vehicle->id, status);
+			printf("vehicle: %d\tstatus: %s\n", vehicle->id, messages_array[status]);
 			log_vehicle(vehicle, ticks-ticks_start, status);
   		} while(status == ENTERED); 
 
 		close(vehicle_fifo);
 	}
-
-	printf("vehicle: %d\tunlink status: %d\n",vehicle->id, unlink(vehicle->fifo_name));
+	unlink(vehicle->fifo_name);
 
 	free(vehicle);
 	no_active_vehicles--;
@@ -192,6 +194,25 @@ void generate_vehicle(int update_rate) {
 }
 
 /**
+ * Sleeps for ticks_to_sleep measured in clock ticks.
+ */
+void sleep_for_ticks(int ticks_to_sleep) {
+	struct timespec time_to_sleep;
+	struct timespec time_remaining;
+
+	time_to_sleep.tv_sec = ticks_to_sleep/TICKS_PER_SECOND;
+	time_to_sleep.tv_nsec = ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND;
+
+	while(nanosleep(&time_to_sleep, &time_remaining)) {
+		if(errno == EINTR) {
+			time_to_sleep.tv_sec = time_remaining.tv_sec;
+			time_to_sleep.tv_nsec = time_remaining.tv_nsec;
+		} else
+			fprintf(stderr, "Error with nanosleep. (%s)\n", strerror(errno));
+	}
+}
+
+/**
  * Starts and runs the vehicle generator for generation_time seconds.
  */
 void start_generator(int generation_time, int update_rate) {
@@ -218,8 +239,7 @@ void start_generator(int generation_time, int update_rate) {
 		}
 
 		//Sleeps for update_rate in clock ticks
-		//FIXME: Change to actual clock ticks
-		usleep(update_rate*TICKS_PER_MICROSECONDS);
+		sleep_for_ticks(update_rate);
 		ticks += update_rate;
 	}
 }
@@ -235,13 +255,14 @@ int main(int argc, char* argv[]) {
 
 	int generation_time = atoi(argv[1]);
 	int update_rate = atoi(argv[2]);
+	TICKS_PER_SECOND = sysconf(_SC_CLK_TCK);
 	
 	logger = fopen("gerador.log", "w"); 
 
 	if(logger == NULL)
 		fprintf(stderr, "Logger could not be open.\n");
 	else
-		fprintf(logger, "ticks;id;dest;t_est;t_vida;observ\n");
+		fprintf(logger, "ticks\t;\tid\t;\tdest\t;\tt_est\t;\tt_vida\t;\tobserv\n");
 
 	//Sets the SIGALRM handler
 	//FIXME: Change to sigaction

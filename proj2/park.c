@@ -39,7 +39,7 @@ void print_usage(){
  * puts information about a vehicle in a CSV file
  * */
 void log_vehicle(int tick,int vehicle_id, vehicle_status_t status){
-	fprintf(logger,"%d;\t\t%d;\t%d;\t\t%s\n",tick,n_spaces - n_vacant, vehicle_id, messages_array[status]);
+	fprintf(logger,"%d\t;\t%d\t;\t%d\t;\t%s\n",tick,n_spaces - n_vacant, vehicle_id, messages_array[status]);
 }
 
 /**
@@ -176,8 +176,8 @@ void *controller_func(void *arg){
 
 		//TODO remove this
 		if(x > 0 && curr_id != SV_IDENTIFIER)
-			printf("\n-----------\nThis is entrance %d\n\nid: %d\ntime: %d\nentrance: %d\nname: %s\n",
-				side,curr_id, curr_park_time, curr_entrance,curr_fifoname);
+			printf("This is entrance %s\tid: %d\ttime: %d\tentrance: %d\tname: %s\n",
+				direction_names[side],curr_id, curr_park_time, curr_entrance,curr_fifoname);
 		
 		//creating an assistant thread and a vehicle struct to send the info about the vehicle
 		pthread_t assistant_tid;
@@ -249,7 +249,7 @@ int main(int argc, char *argv[]){
 		fprintf(stderr,"park.c :: main() :: Failed to open parque.log");
 	}
 
-	fprintf(logger,"t(ticks);\tnlug;\tid_viat;\tobserv\n");
+	fprintf(logger,"t(ticks);\tnlug\t;\tid_viat\t;\tobserv\n");
 
 	if(pthread_mutex_init(&park_mutex,NULL) != 0)
 		fprintf(stderr,"park.c :: main() :: Failed to create park mutex!\n");
