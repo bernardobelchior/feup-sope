@@ -6,4 +6,7 @@ proj1/rmdup
 proj1/lsdir
 proj1/teste*
 proj1/T3*
+proj1/bin
+proj2/bin
+*.log
 *.swp

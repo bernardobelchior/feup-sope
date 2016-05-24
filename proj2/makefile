@@ -1,13 +1,16 @@
 CC = gcc
 CFLAGS = -Wall -lpthread -pthread
+RM = rm
+DEPS = vehicle.h
 TARGET = parque
-MKDIR = mkdir -p
 
-parque: clean gerador vehicle.h
-	$(CC) $(CFLAGS) park.c -o parque
+all: parque gerador
 
-gerador: vehicle.h
-	$(CC) $(CFLAGS) generator.c -o gerador
+parque:
+	$(CC) $(CFLAGS) park.c -o bin/parque
+
+gerador:
+	$(CC) $(CFLAGS) generator.c -o bin/gerador
 
 clean:
-	rm -f parque gerador
+	$(RM) bin/*; 

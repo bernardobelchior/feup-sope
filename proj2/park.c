@@ -2,6 +2,7 @@
  * park.c
  *
  * Created by Bernardo Belchior and Edgar Passos
+ * T3G09
  */
 
 #include <stdio.h>
