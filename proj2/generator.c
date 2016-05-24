@@ -245,7 +245,7 @@ void start_generator(int generation_time, int update_rate) {
 int main(int argc, char* argv[]) {
 	//Checks if the number of arguments is correct
 	if(argc != 3) {
-		fprintf(stderr, "Incorrect use of program.\nShould be used in this format:\ngerador <generation_time> <update_rate>\n");
+		fprintf(stderr, "Incorrect use of program.\nShould be used in this format:\n./gerador <generation_time> <update_rate>\n");
 		return 1;
 	}
 
@@ -253,8 +253,13 @@ int main(int argc, char* argv[]) {
 
 	int generation_time = atoi(argv[1]);
 	int update_rate = atoi(argv[2]);
+
+	if(generation_time <= 0 || update_rate <= 0) {
+		fprintf(stderr, "Incorrect use of program.\nShould be used in this format:\n./gerador <generation_time> <update_rate>\nWhere <generation_time> and <update_rate> must be non-null positive integers.\n");
+		return 1;
+	}
+
 	TICKS_PER_SECOND = sysconf(_SC_CLK_TCK);
-	
 	logger = fopen("gerador.log", "w"); 
 
 	if(logger == NULL)
