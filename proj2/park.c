@@ -171,9 +171,8 @@ void *controller_func(void *arg){
 	int curr_entrance, curr_park_time, curr_id = 0, tick_created;
 	char curr_fifoname[MAX_FIFONAME_SIZE];	
 
-	int x;
 	while(curr_id  != SV_IDENTIFIER) {
-		x = read(fifo_fd,&curr_id,sizeof(int));
+		read(fifo_fd,&curr_id,sizeof(int));
 
 		if(curr_id == SV_IDENTIFIER){ 
 			closed = 1;
