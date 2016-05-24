@@ -23,7 +23,7 @@
 #define FIFO_NOT_CREATED 11
 
 int generate_vehicles = 1;
-int no_active_vehicles = 0;
+int n_active_vehicles = 0;
 FILE* logger; 
 int ticks;
 clock_t TICKS_PER_SECOND;
@@ -82,12 +82,12 @@ void* vehicle_thread(void* arg) {
 
 	vehicle_status_t status = -1;
 
-	if(entrance_fd == -1){
-		fprintf(stderr,"Could not open fifo %s.\n", entrance_fifo);
+	if(entrance_fd == -1){ //Could not open fifo
+		fprintf(stderr,"generator.c :: vehicle_thread() :: Could not open fifo %s.\n", entrance_fifo);
 		status = PARK_CLOSED;
 		log_vehicle(vehicle, ticks-ticks_start, status);
 		free(vehicle);
-		close(entrance_fd);
+		n_active_vehicles--;
 		pthread_exit(NULL);
 	}	
 
@@ -95,16 +95,18 @@ void* vehicle_thread(void* arg) {
 
 	sem_t* semaphore = sem_open(semaphore_name, O_CREAT, FIFO_MODE, 1);
 	if(semaphore == SEM_FAILED) {
-		fprintf(stderr, "Semaphore failed to be created.\nExiting program...");
+		fprintf(stderr, "generator.c :: vehicle_thread() :: Semaphore failed to be created.\nExiting program...");
 		free(vehicle);
 		close(entrance_fd);
+		n_active_vehicles--;
 		pthread_exit(NULL);
 	}
 
 	if(mkfifo(vehicle->fifo_name, FIFO_MODE) == -1) {
-		fprintf(stderr, "The fifo %s could not be created. (%s)\n", vehicle->fifo_name, strerror(errno));
+		fprintf(stderr, "generator.c :: vehicle_thread() :: The fifo %s could not be created. (%s)\n", vehicle->fifo_name, strerror(errno));
 		free(vehicle);
 		close(entrance_fd);
+		n_active_vehicles--;
 		pthread_exit(NULL);
 	} 
 
@@ -123,7 +125,7 @@ void* vehicle_thread(void* arg) {
 	int vehicle_fifo = open(vehicle->fifo_name, O_RDONLY);
 	
 	if(vehicle_fifo == -1) {
-		fprintf(stderr, "The fifo named %s could not be open.\n", vehicle->fifo_name);
+		fprintf(stderr, "generator.c :: vehicle_thread() :: The fifo named %s could not be open.\n", vehicle->fifo_name);
 	} else {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
@@ -136,8 +138,8 @@ void* vehicle_thread(void* arg) {
 	unlink(vehicle->fifo_name);
 
 	free(vehicle);
-	no_active_vehicles--;
-	pthread_exit(0);
+	n_active_vehicles--;
+	pthread_exit(NULL);
 }
 
 /**
@@ -201,14 +203,15 @@ void sleep_for_ticks(int ticks_to_sleep) {
 	struct timespec time_remaining;
 
 	time_to_sleep.tv_sec = ticks_to_sleep/TICKS_PER_SECOND;
-	time_to_sleep.tv_nsec = ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND;
+	time_to_sleep.tv_nsec = (long) (ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND)     % (long) pow(10,9);
+	//time_to_sleep.tv_nsec = ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND;
 
 	while(nanosleep(&time_to_sleep, &time_remaining)) {
 		if(errno == EINTR) {
 			time_to_sleep.tv_sec = time_remaining.tv_sec;
 			time_to_sleep.tv_nsec = time_remaining.tv_nsec;
-		} else
-			fprintf(stderr, "Error with nanosleep. (%s)\n", strerror(errno));
+		} //else
+			/*fprintf(stderr, "generator.c :: sleep_for_ticks() :: Error with nanosleep. (%s)\n", strerror(errno));*/
 	}
 }
 
@@ -225,20 +228,21 @@ void start_generator(int generation_time, int update_rate) {
 
 	//Updates ticks while vehicles must be generated or 
 	//while there are still active vehicles
-	while(generate_vehicles || no_active_vehicles) {
+	while(generate_vehicles || n_active_vehicles) {
 
 		if(generate_vehicles) {
 			//If the vehicle must be generated this tick, generate it
 			//otherwise decrement the ticks until the next vehicle is generated
 			if(ticks_to_next_vehicle == 0) {
 				generate_vehicle(update_rate);
-				no_active_vehicles++;
+				n_active_vehicles++;
 				ticks_to_next_vehicle = get_ticks_to_next_vehicle();
 			} else
 				ticks_to_next_vehicle--;
 		}
 
 		//Sleeps for update_rate in clock ticks
+		printf("going into sleep!\n");
 		sleep_for_ticks(update_rate);
 		ticks += update_rate;
 	}
@@ -260,14 +264,14 @@ int main(int argc, char* argv[]) {
 	logger = fopen("gerador.log", "w"); 
 
 	if(logger == NULL)
-		fprintf(stderr, "Logger could not be open.\n");
+		fprintf(stderr, "generator.c :: main() :: Logger could not be open.\n");
 	else
 		fprintf(logger, "ticks\t;\tid\t;\tdest\t;\tt_est\t;\tt_vida\t;\tobserv\n");
 
 	//Sets the SIGALRM handler
 	//FIXME: Change to sigaction
 	if(signal(SIGALRM, alarm_fired) == SIG_ERR) {
-		fprintf(stderr, "Could not set up signal handler for SIGALRM.\n");
+		fprintf(stderr, "generator.c :: main() :: Could not set up signal handler for SIGALRM.\n");
 	}
 
 	//Initializes a mutex for every direction
@@ -283,10 +287,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	printf("Exiting generator main.\n");
+	fclose(logger);
 
-	//Waits for the other thread before closing the process.
-	//It is needed otherwise the process would end and close
-	//all the running threads.
-	pthread_exit(0);
+	pthread_exit(NULL);
 	return 0;
 }

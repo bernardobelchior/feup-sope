@@ -15,6 +15,7 @@
 #include <semaphore.h>
 #include "vehicle.h"
 #include <errno.h>
+#include <math.h>
 
 #define NUM_CONTROLLERS 4
 #define FIFO_MODE 0666
@@ -23,15 +24,8 @@
 pthread_mutex_t park_mutex;
 int n_vacant, closed, n_spaces;
 FILE *logger;
+clock_t TICKS_PER_SECOND;
 
-/**
- * text to be printed when the program is used incorrectly
- * 
- */
-void print_usage(){
-
-	printf("Run as: ./parque <N_LUGARES> <TEMPO_ABERTURA>\nN_LUGARES and TEMPO_ABERTURA must be positive integers\n");
-}
 
 /**
  * vehicle logger
@@ -40,6 +34,26 @@ void print_usage(){
  * */
 void log_vehicle(int tick,int vehicle_id, vehicle_status_t status){
 	fprintf(logger,"%d\t;\t%d\t;\t%d\t;\t%s\n",tick,n_spaces - n_vacant, vehicle_id, messages_array[status]);
+}
+
+/**
+ * Sleeps for ticks_to_sleep measured in clock ticks
+ */
+void sleep_for_ticks(int ticks_to_sleep){
+	struct timespec time_to_sleep;
+	struct timespec time_remaining;
+
+	time_to_sleep.tv_sec = ticks_to_sleep/TICKS_PER_SECOND;
+	time_to_sleep.tv_nsec  = ticks_to_sleep*pow(10,9)/TICKS_PER_SECOND;
+
+	while(nanosleep(&time_to_sleep, &time_remaining)){
+		if(errno == EINTR){
+			time_to_sleep.tv_sec = time_remaining.tv_sec;
+			time_to_sleep.tv_nsec = time_remaining.tv_nsec;
+		}
+		else
+			fprintf(stderr,"park.c :: sleep_for_ticks() :: Error with nanosleep (%s)\n",strerror(errno));
+	}
 }
 
 /**
@@ -95,7 +109,8 @@ void *assistant_func(void *arg){
 	pthread_mutex_unlock(&park_mutex);
 
 	//wait for the vehicle park time to end
-	usleep(park_time*1000);
+	/*usleep(park_time*1000);*/
+	sleep_for_ticks(park_time);
 
 	//removes the vehicle from the park and sends the appropriate message
 	n_vacant++;
@@ -233,7 +248,7 @@ int main(int argc, char *argv[]){
 	
 	//Validating input
 	if(argc != 3){
-		print_usage();
+		printf("Run as: ./parque <N_LUGARES> <TEMPO_ABERTURA>\nN_LUGARES and TEMPO_ABERTURA must be positive integers\n");
 		return 1;
 	}
 	
@@ -241,8 +256,15 @@ int main(int argc, char *argv[]){
 
 	n_spaces = atoi(argv[1]);
 	time_open = atoi(argv[2]);
+	
+	if(n_spaces < 0 || time_open < 0){
+		printf("Run as: ./parque <N_LUGARES> <TEMPO_ABERTURA>\nN_LUGARES and TEMPO_ABERTURA must be positive integers\n");
+		return 1;
+	}
+
 	n_vacant = n_spaces;
 	closed = 0;
+	TICKS_PER_SECOND = sysconf(_SC_CLK_TCK);
 
 	logger = fopen("parque.log","w");
 	if(logger == NULL){
@@ -253,11 +275,6 @@ int main(int argc, char *argv[]){
 
 	if(pthread_mutex_init(&park_mutex,NULL) != 0)
 		fprintf(stderr,"park.c :: main() :: Failed to create park mutex!\n");
-
-	if(n_spaces < 0 || time_open < 0){
-		print_usage();
-		return 1;
-	}
 
 	if(mkfifo("fifoN",FIFO_MODE) != 0){
 		fprintf(stderr,"park.c :: main() :: Failed making fifoN\n");
