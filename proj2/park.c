@@ -18,7 +18,6 @@
 #include <math.h>
 
 #define NUM_CONTROLLERS 4
-#define FIFO_MODE 0666
 #define SV_IDENTIFIER -1
 
 pthread_mutex_t park_mutex;
@@ -44,8 +43,7 @@ void sleep_for_ticks(int ticks_to_sleep){
 	struct timespec time_remaining;
 
 	time_to_sleep.tv_sec = ticks_to_sleep/TICKS_PER_SECOND;
-	time_to_sleep.tv_nsec  = ticks_to_sleep*pow(10,9)/TICKS_PER_SECOND;
-
+	time_to_sleep.tv_nsec = (long) (ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND) % (long) pow(10,9);
 	while(nanosleep(&time_to_sleep, &time_remaining)){
 		if(errno == EINTR){
 			time_to_sleep.tv_sec = time_remaining.tv_sec;

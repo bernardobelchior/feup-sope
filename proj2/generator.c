@@ -19,9 +19,6 @@
 #include <sys/times.h>
 #include "vehicle.h"
 
-#define FIFO_MODE 0666
-#define FIFO_NOT_CREATED 11
-
 int generate_vehicles = 1;
 int n_active_vehicles = 0;
 FILE* logger; 
@@ -52,7 +49,6 @@ void log_vehicle(vehicle_t *vehicle, int lifetime, vehicle_status_t v_status) {
 void* vehicle_thread(void* arg) {
 	vehicle_t* vehicle = (vehicle_t*) arg;
 
-	int ticks_start = ticks;
 	char entrance_fifo[MAX_FIFONAME_SIZE];
 	int entrance_fd;
 
@@ -85,7 +81,7 @@ void* vehicle_thread(void* arg) {
 	if(entrance_fd == -1){ //Could not open fifo
 		fprintf(stderr,"generator.c :: vehicle_thread() :: Could not open fifo %s.\n", entrance_fifo);
 		status = PARK_CLOSED;
-		log_vehicle(vehicle, ticks-ticks_start, status);
+		log_vehicle(vehicle, 0, status);
 		free(vehicle);
 		n_active_vehicles--;
 		pthread_exit(NULL);
@@ -130,7 +126,7 @@ void* vehicle_thread(void* arg) {
 		do {	
 			read(vehicle_fifo, &status, sizeof(vehicle_status_t));
 			printf("vehicle: %d\tstatus: %s\n", vehicle->id, messages_array[status]);
-			log_vehicle(vehicle, ticks-ticks_start, status);
+			log_vehicle(vehicle, ticks-vehicle->creation_time, status);
   		} while(status == ENTERED); 
 
 		close(vehicle_fifo);
@@ -203,15 +199,14 @@ void sleep_for_ticks(int ticks_to_sleep) {
 	struct timespec time_remaining;
 
 	time_to_sleep.tv_sec = ticks_to_sleep/TICKS_PER_SECOND;
-	time_to_sleep.tv_nsec = (long) (ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND)     % (long) pow(10,9);
-	//time_to_sleep.tv_nsec = ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND;
+	time_to_sleep.tv_nsec = (long) (ticks_to_sleep*pow(10, 9)/TICKS_PER_SECOND) % (long) pow(10,9);
 
 	while(nanosleep(&time_to_sleep, &time_remaining)) {
 		if(errno == EINTR) {
 			time_to_sleep.tv_sec = time_remaining.tv_sec;
 			time_to_sleep.tv_nsec = time_remaining.tv_nsec;
-		} //else
-			/*fprintf(stderr, "generator.c :: sleep_for_ticks() :: Error with nanosleep. (%s)\n", strerror(errno));*/
+		} else
+			fprintf(stderr, "generator.c :: sleep_for_ticks() :: Error with nanosleep. (%s)\n", strerror(errno));
 	}
 }
 
@@ -242,7 +237,6 @@ void start_generator(int generation_time, int update_rate) {
 		}
 
 		//Sleeps for update_rate in clock ticks
-		printf("going into sleep!\n");
 		sleep_for_ticks(update_rate);
 		ticks += update_rate;
 	}
@@ -269,9 +263,12 @@ int main(int argc, char* argv[]) {
 		fprintf(logger, "ticks\t;\tid\t;\tdest\t;\tt_est\t;\tt_vida\t;\tobserv\n");
 
 	//Sets the SIGALRM handler
-	//FIXME: Change to sigaction
-	if(signal(SIGALRM, alarm_fired) == SIG_ERR) {
-		fprintf(stderr, "generator.c :: main() :: Could not set up signal handler for SIGALRM.\n");
+	struct sigaction action, old_action;
+	action.sa_handler = alarm_fired;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 0;	
+	if(sigaction(SIGALRM, &action, &old_action) == -1) {
+		fprintf(stderr, "generator.c :: main() :: Could not set up signal handler for SIGALRM (%s)\n", strerror(errno));
 	}
 
 	//Initializes a mutex for every direction
@@ -282,12 +279,18 @@ int main(int argc, char* argv[]) {
 
 	start_generator(generation_time, update_rate);
 
+	if(sigaction(SIGALRM, &old_action, NULL) == -1) {
+		fprintf(stderr, "Could not restore signal handler for SIGALRM. (%s)\n", strerror(errno));
+	}
+
 	for(i = 0; i < 4; i++) {
 		pthread_mutex_destroy(&mutexes[i]);
 	}
 
+	if(logger != NULL)
+		fclose(logger);
+
 	printf("Exiting generator main.\n");
-	fclose(logger);
 
 	pthread_exit(NULL);
 	return 0;
