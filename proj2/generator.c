@@ -295,7 +295,6 @@ int main(int argc, char* argv[]) {
 	if(logger != NULL)
 		fclose(logger);
 
-	printf("Exiting generator main.\n");
 
 	pthread_exit(NULL);
 	return 0;
