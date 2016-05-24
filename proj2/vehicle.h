@@ -1,11 +1,11 @@
 /**
- * park.c
+ * vehicle.h
  *
  * Created by Bernardo Belchior and Edgar Passos
  */
 
-#define MAX_FIFONAME_SIZE 64
-#define TICKS_PER_MICROSECONDS 1000
+#define MAX_FIFONAME_SIZE 32
+#define FIFO_MODE 0777
 
 typedef enum { NORTH, SOUTH, EAST, WEST } direction_t;
 

@@ -17,7 +17,6 @@
 #include <errno.h>
 
 #define NUM_CONTROLLERS 4
-#define FIFO_MODE 0666
 #define SV_IDENTIFIER -1
 
 pthread_mutex_t park_mutex;
