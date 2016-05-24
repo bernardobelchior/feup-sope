@@ -246,7 +246,7 @@ int main(int argc, char *argv[]){
 	
 	//Validating input
 	if(argc != 3){
-		printf("Run as: ./parque <N_LUGARES> <TEMPO_ABERTURA>\nN_LUGARES and TEMPO_ABERTURA must be positive integers\n");
+		fprintf(stderr, "Incorrect use of program.\nShould be used in this format:\n./parque <number_parking_spots> <working_time>\n");
 		return 1;
 	}
 	
@@ -256,7 +256,7 @@ int main(int argc, char *argv[]){
 	time_open = atoi(argv[2]);
 	
 	if(n_spaces < 0 || time_open < 0){
-		printf("Run as: ./parque <N_LUGARES> <TEMPO_ABERTURA>\nN_LUGARES and TEMPO_ABERTURA must be positive integers\n");
+		fprintf(stderr, "Incorrect use of program.\nShould be used in this format:\n./parque <number_parking_spots> <working_time>\nWhere <number_parking_spots> and <working_time> must be positive integers.\n");
 		return 1;
 	}
 
